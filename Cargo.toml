@@ -1,0 +1,20 @@
+[package]
+name = "universal-sierra-compiler"
+version = "1.0.0"
+edition = "2021"
+
+
+[dependencies]
+cairo-lang-starknet-sierra-0_1_0 = {package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6"}
+cairo-lang-starknet-sierra-1_0_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo", tag = "v1.0.0-rc0" }
+cairo-lang-starknet = "=2.4.0"
+serde_json = "1.0.108"
+serde = "1.0.193"
+test-case = "3.3.1"
+clap = "4.4.11"
+anyhow = "1.0.75"
+console = "0.15.7"
+
+[[bin]]
+name = "universal-sierra-compiler"
+path = "src/main.rs"
