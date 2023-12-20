@@ -1,0 +1,85 @@
+use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use indoc::indoc;
+use snapbox::cmd::{cargo_bin, Command};
+use std::fs;
+use std::fs::File;
+use std::path::PathBuf;
+use tempfile::TempDir;
+use test_case::test_case;
+
+#[must_use]
+fn prepare_runner(args: Vec<&str>, temp_dir: &TempDir) -> Command {
+    Command::new(cargo_bin!("universal-sierra-compiler"))
+        .current_dir(temp_dir.path())
+        .args(args)
+}
+
+#[must_use]
+fn prepare_temp_dir(file_name: &str) -> TempDir {
+    let temp_dir = TempDir::new().expect("Unable to create a temporary directory");
+
+    let src_dir = PathBuf::from("tests/data");
+
+    fs_extra::file::copy(
+        src_dir.join(file_name),
+        temp_dir.path().join(file_name),
+        &fs_extra::file::CopyOptions::new().overwrite(true),
+    )
+    .unwrap_or_else(|_| panic!("Unable to copy {file_name}"));
+
+    temp_dir
+}
+
+fn verify_output_file(output_path: PathBuf) {
+    let file = File::open(output_path).unwrap();
+    let casm_json = serde_json::from_reader(file).unwrap();
+
+    assert!(serde_json::from_value::<CasmContractClass>(casm_json).is_ok());
+}
+
+#[test]
+fn wrong_json() {
+    let sierra_file_name = "wrong_sierra.json";
+    let casm_file_name = "casm.json";
+    let args = vec![
+        "--sierra-input-path",
+        &sierra_file_name,
+        "--casm-output-path",
+        casm_file_name,
+    ];
+
+    let temp_dir = prepare_temp_dir(sierra_file_name);
+    let snapbox = prepare_runner(args, &temp_dir);
+
+    snapbox.assert().failure().stdout_eq(indoc! {r"
+        [ERROR] Unable to read sierra_program. Make sure it is an array of felts
+    "});
+
+    fs::remove_dir_all(temp_dir).unwrap();
+}
+
+#[test_case("1_4_0"; "sierra 1.4.0")]
+#[test_case("1_3_0"; "sierra 1.3.0")]
+#[test_case("1_2_0"; "sierra 1.2.0")]
+#[test_case("1_1_0"; "sierra 1.1.0")]
+#[test_case("1_0_0"; "sierra 1.0.0")]
+#[test_case("0_1_0"; "sierra 0.1.0")]
+fn test_happy_case(sierra_version: &str) {
+    let sierra_file_name = "sierra_".to_string() + sierra_version + ".json";
+    let casm_file_name = "casm.json";
+    let args = vec![
+        "--sierra-input-path",
+        &sierra_file_name,
+        "--casm-output-path",
+        casm_file_name,
+    ];
+
+    let temp_dir = prepare_temp_dir(&sierra_file_name);
+    let snapbox = prepare_runner(args, &temp_dir);
+
+    snapbox.assert().success().stdout_eq("");
+
+    verify_output_file(temp_dir.path().join(casm_file_name));
+
+    fs::remove_dir_all(temp_dir).unwrap();
+}
