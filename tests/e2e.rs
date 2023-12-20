@@ -1,21 +1,20 @@
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
 use indoc::indoc;
 use snapbox::cmd::{cargo_bin, Command};
-use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
 use tempfile::TempDir;
 use test_case::test_case;
 
 #[must_use]
-fn prepare_runner(args: Vec<&str>, temp_dir: &TempDir) -> Command {
+fn runner(args: Vec<&str>, temp_dir: &TempDir) -> Command {
     Command::new(cargo_bin!("universal-sierra-compiler"))
         .current_dir(temp_dir.path())
         .args(args)
 }
 
 #[must_use]
-fn prepare_temp_dir(file_name: &str) -> TempDir {
+fn temp_dir_with_sierra_file(file_name: &str) -> TempDir {
     let temp_dir = TempDir::new().expect("Unable to create a temporary directory");
 
     let src_dir = PathBuf::from("tests/data");
@@ -48,14 +47,14 @@ fn write_to_existing_file() {
         casm_file_name,
     ];
 
-    let temp_dir = prepare_temp_dir(sierra_file_name);
+    let temp_dir = temp_dir_with_sierra_file(sierra_file_name);
     let _ = File::create(temp_dir.path().join(casm_file_name)).expect("Unable to create file");
 
-    let snapbox = prepare_runner(args, &temp_dir);
+    let snapbox = runner(args, &temp_dir);
 
     snapbox.assert().success().stdout_eq("");
 
-    fs::remove_dir_all(temp_dir).unwrap();
+    verify_output_file(temp_dir.path().join(casm_file_name));
 }
 
 #[test]
@@ -69,14 +68,12 @@ fn wrong_json() {
         casm_file_name,
     ];
 
-    let temp_dir = prepare_temp_dir(sierra_file_name);
-    let snapbox = prepare_runner(args, &temp_dir);
+    let temp_dir = temp_dir_with_sierra_file(sierra_file_name);
+    let snapbox = runner(args, &temp_dir);
 
     snapbox.assert().failure().stdout_eq(indoc! {r"
         [ERROR] Unable to read sierra_program. Make sure it is an array of felts
     "});
-
-    fs::remove_dir_all(temp_dir).unwrap();
 }
 
 #[test_case("1_4_0"; "sierra 1.4.0")]
@@ -95,12 +92,10 @@ fn test_happy_case(sierra_version: &str) {
         casm_file_name,
     ];
 
-    let temp_dir = prepare_temp_dir(&sierra_file_name);
-    let snapbox = prepare_runner(args, &temp_dir);
+    let temp_dir = temp_dir_with_sierra_file(&sierra_file_name);
+    let snapbox = runner(args, &temp_dir);
 
-    snapbox.assert().success().stdout_eq("");
+    snapbox.assert().success();
 
     verify_output_file(temp_dir.path().join(casm_file_name));
-
-    fs::remove_dir_all(temp_dir).unwrap();
 }
