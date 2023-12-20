@@ -59,6 +59,20 @@ fn write_to_existing_file() {
 }
 
 #[test]
+fn write_to_stdout() {
+    let sierra_file_name = "sierra_1_4_0.json";
+    let args = vec!["--sierra-input-path", &sierra_file_name];
+
+    let temp_dir = prepare_temp_dir(sierra_file_name);
+    let snapbox = prepare_runner(args, &temp_dir);
+
+    let output = String::from_utf8(snapbox.assert().success().get_output().stdout.clone()).unwrap();
+    assert!(output.contains("bytecode"));
+
+    fs::remove_dir_all(temp_dir).unwrap();
+}
+
+#[test]
 fn wrong_json() {
     let sierra_file_name = "wrong_sierra.json";
     let casm_file_name = "casm.json";
