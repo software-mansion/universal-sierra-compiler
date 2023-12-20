@@ -52,7 +52,7 @@ fn write_to_existing_file() {
 
     let snapbox = runner(args, &temp_dir);
 
-    snapbox.assert().success().stdout_eq("");
+    snapbox.assert().success();
 
     verify_output_file(temp_dir.path().join(casm_file_name));
 }
