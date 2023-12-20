@@ -38,6 +38,27 @@ fn verify_output_file(output_path: PathBuf) {
 }
 
 #[test]
+fn write_to_existing_file() {
+    let sierra_file_name = "sierra_1_4_0.json";
+    let casm_file_name = "casm.json";
+    let args = vec![
+        "--sierra-input-path",
+        &sierra_file_name,
+        "--casm-output-path",
+        casm_file_name,
+    ];
+
+    let temp_dir = prepare_temp_dir(sierra_file_name);
+    let _ = File::create(temp_dir.path().join(casm_file_name)).expect("Unable to create file");
+
+    let snapbox = prepare_runner(args, &temp_dir);
+
+    snapbox.assert().success().stdout_eq("");
+
+    fs::remove_dir_all(temp_dir).unwrap();
+}
+
+#[test]
 fn wrong_json() {
     let sierra_file_name = "wrong_sierra.json";
     let casm_file_name = "casm.json";
