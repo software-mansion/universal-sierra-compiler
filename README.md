@@ -1,6 +1,6 @@
 # Universal-Sierra-Compiler
 
-Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ever-existing Sierra version to the CASM.
+Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ever-existing Sierra version to CASM.
 
 ## Usage
 
