@@ -4,7 +4,7 @@ Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ev
 
 ## Usage
 
-To use the tool, just pass your Sierra json file path:
+To use the tool, just pass a path to a file with Sierra in json format:
 
 ```shell
 $ universal-sierra-compiler \
