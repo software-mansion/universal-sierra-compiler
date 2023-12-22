@@ -24,9 +24,3 @@ $ universal-sierra-compiler \
   --sierra-input-path ./path/to/sierra.json
   --casm-output-path ./path/to/casm.json
 ```
-
-> 📝 **Note**
->
-> `casm.json` can be path to existing (or not) file.
-> If the file exists its contents will be overwritten.
-> 
