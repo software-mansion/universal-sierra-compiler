@@ -1,4 +1,3 @@
-use std::fs;
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
 use indoc::indoc;
 use snapbox::cmd::{cargo_bin, Command};
