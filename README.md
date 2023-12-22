@@ -2,6 +2,15 @@
 
 Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ever-existing Sierra version to CASM.
 
+| Supported Sierra Versions |
+|---------------------------|
+| ~1.4.0                    |
+| ~1.3.0                    |
+| ~1.2.0                    |
+| 1.1.0                     |
+| 1.0.0                     |
+| 0.1.0                     |
+
 ## Usage
 
 To use the tool, just pass a path to a file with Sierra in json format:
