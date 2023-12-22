@@ -16,7 +16,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
-      - run: cargo test --release --lib
       - run: cargo test --release
 
   rustfmt:
