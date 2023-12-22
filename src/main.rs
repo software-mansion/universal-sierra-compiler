@@ -2,7 +2,7 @@ use anyhow::{Context, Error, Result};
 use clap::Parser;
 use console::style;
 use serde_json::to_writer;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::path::PathBuf;
 use universal_sierra_compiler::compile;
 
@@ -36,12 +36,8 @@ fn main_execution() -> Result<bool> {
 
     match args.casm_output_path {
         Some(output_path) => {
-            let casm_file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .append(false)
-                .open(output_path)
-                .context("Unable to open/create casm json file")?;
+            let casm_file =
+                File::create(output_path).context("Unable to open/create casm json file")?;
 
             to_writer(casm_file, &casm_json).context("Unable to save casm json file")?;
         }
