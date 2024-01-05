@@ -32,7 +32,6 @@ jobs:
     name: Build ${{ matrix.target }}
     needs: get-version
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
 
     env:
       # Cross-compiled targets will override this to `cross`.
@@ -97,8 +96,7 @@ jobs:
           PKG_FULL_NAME="universal-sierra-compiler-${{ needs.get-version.outputs.version }}-${{ matrix.target }}"
           echo "PKG_FULL_NAME=$PKG_FULL_NAME" >> $GITHUB_ENV
 
-          chmod +x ./scripts/package.sh
-          ./scripts/package.sh "${{ matrix.target }}" "$PKG_FULL_NAME"
+          bash ./scripts/package.sh "${{ matrix.target }}" "$PKG_FULL_NAME"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
