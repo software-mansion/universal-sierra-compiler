@@ -75,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Package
+      - name: Install
         shell: bash
         run: |
           bash ./scripts/install.sh
