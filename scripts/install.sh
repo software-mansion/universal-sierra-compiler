@@ -1,5 +1,42 @@
 #!/bin/bash
 
+BINARY_NAME="universal-sierra-compiler"
+LOCAL_BIN="${HOME}/.local/bin"
+
+main () {
+  download_and_extract_binary
+
+  addBinaryToPath
+
+  echo "${BINARY_NAME} (${release_tag}) has been installed successfully."
+}
+
+download_and_extract_binary() {
+  repo="https://github.com/software-mansion/universal-sierra-compiler"
+  # Fetch the latest release tag from GitHub API
+  release_tag=$(curl -# -Ls -H 'Accept: application/json' "${repo}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+
+  # Define the operating system and architecture
+  get_architecture
+  _arch="$RETVAL"
+
+  artifact_name=${BINARY_NAME}-${release_tag}-${_arch}
+
+  echo "Downloading and extracting ${artifact_name}..."
+  # Create a temporary directory
+  temp_dir=$(mktemp -d)
+
+  # Download and extract the archive
+  curl -L "${repo}/releases/download/${release_tag}/${artifact_name}.tar.gz" | tar -xz -C "${temp_dir}"
+
+  # Move the binary to a LOCAL_BIN directory
+  mkdir -p "${LOCAL_BIN}"
+  mv "${temp_dir}/${artifact_name}/bin/${BINARY_NAME}" "${LOCAL_BIN}"
+
+  # Clean up temporary files
+  rm -rf "${temp_dir}"
+}
+
 get_architecture() {
   local _ostype _cputype _bitness _arch _clibtype
   _ostype="$(uname -s)"
@@ -57,37 +94,37 @@ get_architecture() {
   RETVAL="$_arch"
 }
 
-repo="war-in/universal-sierra-compiler"
-binary_name="universal-sierra-compiler"
+addBinaryToPath() {
+  # Store the correct profile file (i.e. .profile for bash or .zshenv for ZSH).
+  case $SHELL in
+  */zsh)
+      PROFILE=${ZDOTDIR-"$HOME"}/.zshenv
+      ;;
+  */bash)
+      PROFILE=$HOME/.bashrc
+      ;;
+  */fish)
+      PROFILE=$HOME/.config/fish/config.fish
+      ;;
+  */ash)
+      PROFILE=$HOME/.profile
+      ;;
+  *)
+      echo "universal-sierra-compiler: could not detect shell, manually add ${LOCAL_BIN} to your PATH."
+      exit 0
+  esac
 
-if ! command -v jq &> /dev/null; then
-    echo "Please install 'jq' to run this script."
-    exit 1
-fi
+  # Only add universal-sierra-compiler if it isn't already in PATH.
+  case ":$PATH:" in
+      *":${LOCAL_BIN}/${BINARY_NAME}:"*)
+          # The path is already in PATH, do nothing
+          echo tutaj
+          ;;
+      *)
+          # Add the universal-sierra-compiler directory to the path
+          echo >> "$PROFILE" && echo "export PATH=\"\$PATH:$LOCAL_BIN/$BINARY_NAME\"" >> "$PROFILE"
+          ;;
+  esac
+}
 
-# Fetch the latest release tag from GitHub API
-release_tag=$(curl -# -Ls -H 'Accept: application/json' "https://github.com/${repo}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-
-# Define the operating system and architecture
-get_architecture
-_arch="$RETVAL"
-
-artifact_name=${binary_name}-${release_tag}-${_arch}
-
-# Define the download URL
-download_url="https://github.com/${repo}/releases/download/${release_tag}/${artifact_name}.tar.gz"
-
-# Create a temporary directory
-temp_dir=$(mktemp -d)
-
-# Download and extract the archive
-echo "Downloading and extracting ${artifact_name}..."
-curl -L "${download_url}" | tar -xz -C "${temp_dir}"
-
-# Move the binary to a directory in the PATH
-sudo mv "${temp_dir}"/"${artifact_name}"/bin/${binary_name} /usr/local/bin
-
-# Clean up temporary files
-rm -rf "${temp_dir}"
-
-echo "${binary_name} has been installed successfully."
+main
