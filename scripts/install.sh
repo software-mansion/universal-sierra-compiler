@@ -94,7 +94,7 @@ addBinaryToPath() {
   */fish)
       PROFILE=$HOME/.config/fish/config.fish
       ;;
-  */ash)
+  */ash | */sh)
       PROFILE=$HOME/.profile
       ;;
   *)
