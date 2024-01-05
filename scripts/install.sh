@@ -111,7 +111,6 @@ addBinaryToPath() {
   case ":$PATH:" in
       *":${LOCAL_BIN}/${BINARY_NAME}:"*)
           # The path is already in PATH, do nothing
-          echo tutaj
           ;;
       *)
           # Add the universal-sierra-compiler directory to the path
