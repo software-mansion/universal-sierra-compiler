@@ -59,11 +59,6 @@ get_architecture() {
   Darwin)
     _ostype=apple-darwin
     ;;
-
-  MINGW* | MSYS* | CYGWIN* | Windows_NT)
-    _ostype=pc-windows-gnu
-    ;;
-
   *)
     err "unrecognized OS type: $_ostype"
     ;;
