@@ -38,29 +38,22 @@ download_and_extract_binary() {
 }
 
 get_architecture() {
-  local _ostype _cputype _bitness _arch _clibtype
+  local _ostype _cputype _arch _clibtype
   _ostype="$(uname -s)"
   _cputype="$(uname -m)"
   _clibtype="gnu"
 
-  if [ "$_ostype" = Linux ]; then
-    if ldd --_requested_version 2>&1 | grep -q 'musl'; then
-      _clibtype="musl"
-    fi
+  if [ "$_ostype" = Linux ] && ldd --_requested_version 2>&1 | grep -q 'musl'; then
+    _clibtype="musl"
   fi
 
-  if [ "$_ostype" = Darwin ] && [ "$_cputype" = i386 ]; then
-    # Darwin `uname -m` lies
-    if sysctl hw.optional.x86_64 | grep -q ': 1'; then
-      _cputype=x86_64
-    fi
+  if [ "$_ostype" = Darwin ] && [ "$_cputype" = i386 ] && sysctl hw.optional.x86_64 | grep -q ': 1'; then
+    _cputype=x86_64
   fi
 
   case "$_ostype" in
   Linux)
-    check_proc
     _ostype=unknown-linux-$_clibtype
-    _bitness=$(get_bitness)
     ;;
 
   Darwin)
