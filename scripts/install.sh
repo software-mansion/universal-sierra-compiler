@@ -6,7 +6,7 @@ LOCAL_BIN="${HOME}/.local/bin"
 main () {
   download_and_extract_binary
 
-  addBinaryToPath
+  add_binary_to_path
 
   echo "${BINARY_NAME} (${release_tag}) has been installed successfully."
 }
@@ -82,7 +82,7 @@ get_architecture() {
   RETVAL="$_arch"
 }
 
-addBinaryToPath() {
+add_binary_to_path() {
   # Store the correct profile file (i.e. .profile for bash or .zshenv for ZSH).
   case $SHELL in
   */zsh)
