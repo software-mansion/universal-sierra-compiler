@@ -4,6 +4,9 @@ BINARY_NAME="universal-sierra-compiler"
 LOCAL_BIN="${HOME}/.local/bin"
 
 main () {
+  need_cmd curl
+  need_cmd tar
+
   download_and_extract_binary
 
   add_binary_to_path
