@@ -60,7 +60,7 @@ get_architecture() {
     _ostype=apple-darwin
     ;;
   *)
-    err "unrecognized OS type: $_ostype"
+    err "unsupported OS type: $_ostype"
     ;;
   esac
 
