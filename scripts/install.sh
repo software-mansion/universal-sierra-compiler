@@ -14,6 +14,12 @@ main () {
   echo "${BINARY_NAME} (${release_tag}) has been installed successfully."
 }
 
+need_cmd() {
+  if ! check_cmd "$1"; then
+    err "need '$1' (command not found)"
+  fi
+}
+
 download_and_extract_binary() {
   repo="https://github.com/software-mansion/universal-sierra-compiler"
   # Fetch the latest release tag from GitHub API
