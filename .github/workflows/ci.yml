@@ -83,7 +83,7 @@ jobs:
       - name: Check if installed
         shell: bash
         run: |
-          #!/bin/bash
+          #!/usr/bin/env bash
           if ! command -v universal-sierra-compiler &> /dev/null; then
             echo "universal-sierra-compiler was not installed"
             exit 1
