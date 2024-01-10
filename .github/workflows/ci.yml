@@ -75,13 +75,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install
-        shell: bash
+      - name: Install and check
         run: |
           bash ./scripts/install.sh
-
-      - name: Check if installed
-        run: |
+          
           if ! command -v universal-sierra-compiler &> /dev/null; then
             echo "universal-sierra-compiler was not installed"
             exit 1
