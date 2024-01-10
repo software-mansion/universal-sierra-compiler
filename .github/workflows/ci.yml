@@ -76,15 +76,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install and check
-        run: |
-          echo $PATH
-          
+        run: |          
           bash ./scripts/install.sh
-          
-          echo $PATH
-          
-          cat ~/.bashrc
-          cat ~/.profile
+
+          source ~/.bashrc
           
           if ! command -v universal-sierra-compiler &> /dev/null; then
             echo "universal-sierra-compiler was not installed"
