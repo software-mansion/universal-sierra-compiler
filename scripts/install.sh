@@ -119,7 +119,7 @@ add_binary_to_path() {
           ;;
       *)
           # Add the universal-sierra-compiler directory to the path
-          echo >> "$PROFILE" && echo "export PATH=\"\$PATH:$LOCAL_BIN/$BINARY_NAME\"" >> "$PROFILE"
+          echo >> "$PROFILE" && echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> "$PROFILE"
           ;;
   esac
 }
