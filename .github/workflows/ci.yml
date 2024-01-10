@@ -79,3 +79,11 @@ jobs:
         shell: bash
         run: |
           bash ./scripts/install.sh
+
+      - name: Check if installed
+        shell: bash
+        run: |
+          if ! command -v universal-sierra-compiler &> /dev/null; then
+            echo "universal-sierra-compiler was not installed"
+            exit 1
+          fi
