@@ -4,8 +4,8 @@ BINARY_NAME="universal-sierra-compiler"
 LOCAL_BIN="${HOME}/.local/bin"
 
 main () {
-  need_cmd curl
-  need_cmd tar
+  check_cmd curl
+  check_cmd tar
 
   download_and_extract_binary
 
@@ -14,9 +14,10 @@ main () {
   echo "${BINARY_NAME} (${release_tag}) has been installed successfully."
 }
 
-need_cmd() {
-  if ! check_cmd "$1"; then
-    err "need '$1' (command not found)"
+check_cmd() {
+  if ! command -v "$1" &> /dev/null; then
+      echo "$1 is not available"
+      exit 1
   fi
 }
 
