@@ -17,6 +17,7 @@ main () {
 check_cmd() {
   if ! command -v "$1" &> /dev/null; then
       echo "$1 is not available"
+      echo "Please install $1 and run the script again"
       exit 1
   fi
 }
