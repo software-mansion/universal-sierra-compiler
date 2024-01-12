@@ -1,5 +1,6 @@
 #!/bin/bash
 
+REPO="https://github.com/software-mansion/universal-sierra-compiler"
 BINARY_NAME="universal-sierra-compiler"
 LOCAL_BIN="${HOME}/.local/bin"
 
@@ -7,7 +8,19 @@ main () {
   check_cmd curl
   check_cmd tar
 
-  download_and_extract_binary
+  if [ $# -eq 0 ]; then
+    # If there is no arguments, fetch the latest release tag from GitHub API
+    release_tag=$(curl -# -Ls -H 'Accept: application/json' "${REPO}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+  else
+    release_tag=$1
+    verify_release_tag "$release_tag"
+
+    if [[ ! "$release_tag" =~ ^v ]]; then
+      release_tag="v$release_tag"
+    fi
+  fi
+
+  download_and_extract_binary "$release_tag"
 
   add_binary_to_path
 
@@ -22,10 +35,30 @@ check_cmd() {
   fi
 }
 
+verify_release_tag() {
+  local version=$1
+  IFS='.' read -ra parts <<< "${version#v}"
+
+  # Ensure there are three parts in the version (major.minor.patch)
+  if [ "${#parts[@]}" -ne 3 ]; then
+    echo "Please pass correct version (e.g. \"v1.0.0\")"
+    exit 1
+  fi
+
+  for part in "${parts[@]}"; do
+    if ! is_integer "$part"; then
+      echo "One of the major, minor, patch is not an integer"
+      exit 1
+    fi
+  done
+}
+
+is_integer() {
+  [[ "$1" =~ ^[0-9]+$ ]]
+}
+
 download_and_extract_binary() {
-  repo="https://github.com/software-mansion/universal-sierra-compiler"
-  # Fetch the latest release tag from GitHub API
-  release_tag=$(curl -# -Ls -H 'Accept: application/json' "${repo}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+  release_tag=$1
 
   # Define the operating system and architecture
   get_architecture
@@ -38,7 +71,7 @@ download_and_extract_binary() {
   temp_dir=$(mktemp -d)
 
   # Download and extract the archive
-  curl -L "${repo}/releases/download/${release_tag}/${artifact_name}.tar.gz" | tar -xz -C "${temp_dir}"
+  curl -L "${REPO}/releases/download/${release_tag}/${artifact_name}.tar.gz" | tar -xz -C "${temp_dir}"
 
   # Move the binary to a LOCAL_BIN directory
   mkdir -p "${LOCAL_BIN}"
@@ -125,4 +158,5 @@ add_binary_to_path() {
   esac
 }
 
-main
+set -e
+main "$@"
