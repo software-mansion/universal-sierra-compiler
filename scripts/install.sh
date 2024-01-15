@@ -8,16 +8,12 @@ main () {
   check_cmd curl
   check_cmd tar
 
-  if [ $# -eq 0 ]; then
-    # If there is no arguments, fetch the latest release tag from GitHub API
-    release_tag=$(curl -# -Ls -H 'Accept: application/json' "${REPO}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-  else
-    release_tag=$1
-    verify_release_tag "$release_tag"
+  version=${1:-latest}
+  release_tag=$(curl -# -Ls -H 'Accept: application/json' "${REPO}/releases/{$version}" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
 
-    if [[ ! "$release_tag" =~ ^v ]]; then
-      release_tag="v$release_tag"
-    fi
+  if [[ $release_tag == *"error"* ]]; then
+    echo "Please pass correct version (e.g. \"v1.0.0\")"
+    exit 1
   fi
 
   download_and_extract_binary "$release_tag"
@@ -33,28 +29,6 @@ check_cmd() {
       echo "Please install $1 and run the script again"
       exit 1
   fi
-}
-
-verify_release_tag() {
-  local version=$1
-  IFS='.' read -ra parts <<< "${version#v}"
-
-  # Ensure there are three parts in the version (major.minor.patch)
-  if [ "${#parts[@]}" -ne 3 ]; then
-    echo "Please pass correct version (e.g. \"v1.0.0\")"
-    exit 1
-  fi
-
-  for part in "${parts[@]}"; do
-    if ! is_integer "$part"; then
-      echo "One of the major, minor, patch is not an integer"
-      exit 1
-    fi
-  done
-}
-
-is_integer() {
-  [[ "$1" =~ ^[0-9]+$ ]]
 }
 
 download_and_extract_binary() {
