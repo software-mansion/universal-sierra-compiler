@@ -1,5 +1,6 @@
 #!/bin/bash
 
+REPO="https://github.com/software-mansion/universal-sierra-compiler"
 BINARY_NAME="universal-sierra-compiler"
 LOCAL_BIN="${HOME}/.local/bin"
 
@@ -7,7 +8,15 @@ main () {
   check_cmd curl
   check_cmd tar
 
-  download_and_extract_binary
+  version=${1:-latest}
+  release_tag=$(curl -# --fail -Ls -H 'Accept: application/json' "${REPO}/releases/{$version}" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+
+  if [ -z "$release_tag" ]; then
+    echo "No such version $version, please pass correct one (e.g. v1.0.0)"
+    exit 1
+  fi
+
+  download_and_extract_binary "$release_tag"
 
   add_binary_to_path
 
@@ -23,9 +32,7 @@ check_cmd() {
 }
 
 download_and_extract_binary() {
-  repo="https://github.com/software-mansion/universal-sierra-compiler"
-  # Fetch the latest release tag from GitHub API
-  release_tag=$(curl -# -Ls -H 'Accept: application/json' "${repo}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+  release_tag=$1
 
   # Define the operating system and architecture
   get_architecture
@@ -38,7 +45,7 @@ download_and_extract_binary() {
   temp_dir=$(mktemp -d)
 
   # Download and extract the archive
-  curl -L "${repo}/releases/download/${release_tag}/${artifact_name}.tar.gz" | tar -xz -C "${temp_dir}"
+  curl -L "${REPO}/releases/download/${release_tag}/${artifact_name}.tar.gz" | tar -xz -C "${temp_dir}"
 
   # Move the binary to a LOCAL_BIN directory
   mkdir -p "${LOCAL_BIN}"
@@ -125,4 +132,5 @@ add_binary_to_path() {
   esac
 }
 
-main
+set -e
+main "$@"
