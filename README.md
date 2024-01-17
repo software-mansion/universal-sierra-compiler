@@ -11,6 +11,21 @@ Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ev
 | 1.0.0                     |
 | 0.1.0                     |
 
+## Installation
+
+To install the binary on your PATH run the following line
+
+```shell
+curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh
+
+...
+universal-sierra-compiler (v1.0.0) has been installed successfully.
+```
+
+> 📝 **Note**
+>
+> If the script can't add installed binary to the PATH, it will print the instructions about adding it manually. 
+
 ## Usage
 
 To use the tool, just pass a path to a file with Sierra in json format:
