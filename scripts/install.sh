@@ -9,10 +9,10 @@ main () {
   check_cmd tar
 
   version=${1:-latest}
-  release_tag=$(curl -# -Ls -H 'Accept: application/json' "${REPO}/releases/{$version}" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+  release_tag=$(curl -# --fail -Ls -H 'Accept: application/json' "${REPO}/releases/{$version}" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
 
-  if [[ $release_tag == *"error"* ]]; then
-    echo "Please pass correct version (e.g. \"v1.0.0\")"
+  if [ -z "$release_tag" ]; then
+    echo "No such version $version, please pass correct one (e.g. v1.0.0)"
     exit 1
   fi
 
