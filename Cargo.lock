@@ -3128,6 +3128,8 @@ name = "universal-sierra-compiler"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "cairo-lang-sierra 2.4.0",
+ "cairo-lang-sierra-to-casm 2.4.0",
  "cairo-lang-starknet 1.0.0-alpha.6",
  "cairo-lang-starknet 1.0.0-rc0",
  "cairo-lang-starknet 2.4.0",

@@ -1,6 +1,6 @@
 use std::fs::File;
 use test_case::test_case;
-use universal_sierra_compiler::compile;
+use universal_sierra_compiler::{compile, compile_raw};
 
 #[test]
 fn wrong_json() {
@@ -24,4 +24,14 @@ fn compile_sierra(sierra_version: &str) {
 
     let casm_class = compile(sierra_json);
     assert!(casm_class.is_ok());
+}
+
+// TODO: Other versions tests
+#[test_case("1_4_0"; "sierra 1.4.0")]
+fn compile_raw_sierra(sierra_version: &str) {
+    let file = File::open("tests/data/raw_sierra/".to_string() + sierra_version + "_raw.json").unwrap();
+    let artifact = serde_json::from_reader(file).unwrap();
+    let compiled = compile_raw(artifact);
+
+    assert!(compiled.is_ok());
 }

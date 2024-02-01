@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
+use cairo_lang_sierra_to_casm::compiler::{CairoProgram, CompilationError};
 use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use cairo_lang_starknet::casm_contract_class::CasmContractClass;
@@ -36,6 +37,35 @@ pub fn compile(mut sierra_json: Value) -> Result<CasmContractClass> {
             )
         }
     }
+}
+
+use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
+use cairo_lang_sierra::program::{Program};
+
+#[derive(Deserialize)]
+pub struct SierraArtifact {
+    sierra_program: Program,
+}
+
+pub enum ParsingOrCompilationError {
+    ParsingError(String),
+    CompilationError(Box<CompilationError>)
+}
+
+impl From<serde_json::Error> for ParsingOrCompilationError {
+    fn from(value: serde_json::Error) -> ParsingOrCompilationError {
+        ParsingOrCompilationError::ParsingError(value.to_string())
+    }
+}
+
+// TODO: Extract to separate module and support other sierra versions.
+// Perhaps this function should have common parsing with the other one and recognise automatically what's being compiled?
+pub fn compile_raw(sierra_artifact: Value) -> Result<CairoProgram, ParsingOrCompilationError> {
+    let sierra_artifact: SierraArtifact = serde_json::from_value(sierra_artifact)?;
+    let metadata_config = MetadataComputationConfig::default();
+    let metadata = calc_metadata(&sierra_artifact.sierra_program, metadata_config).unwrap();
+    cairo_lang_sierra_to_casm::compiler::compile(&sierra_artifact.sierra_program, &metadata, true)
+        .map_err(|e| ParsingOrCompilationError::CompilationError(e))
 }
 
 /// Converts `CasmContractClass` from the old `cairo_lang_starknet` library version
