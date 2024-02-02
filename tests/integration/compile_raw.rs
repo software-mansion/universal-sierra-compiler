@@ -11,7 +11,6 @@ fn wrong_json() {
     assert!(cairo_program.is_err());
 }
 
-// TODO: Other versions tests
 #[test]
 fn compile_raw_sierra() {
     let file = File::open("tests/data/sierra_raw/sierra_1_4_0.json").unwrap();
