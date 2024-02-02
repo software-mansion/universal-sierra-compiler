@@ -31,8 +31,7 @@ fn main_execution() -> Result<bool> {
     let sierra_json =
         serde_json::from_reader(sierra_file).context("Unable to read sierra json file")?;
 
-    let casm = compile(sierra_json)?;
-    let casm_json = serde_json::to_value(casm)?;
+    let casm_json = compile(sierra_json)?;
 
     match args.casm_output_path {
         Some(output_path) => {
