@@ -1,7 +1,7 @@
 use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use console::style;
-use serde_json::{json, to_writer};
+use serde_json::to_writer;
 use std::fs::File;
 use universal_sierra_compiler::commands;
 use universal_sierra_compiler::commands::compile_contract::CompileContract;
@@ -35,8 +35,7 @@ fn main_execution() -> Result<bool> {
             let sierra_json =
                 serde_json::from_reader(sierra_file).context("Unable to read sierra json file")?;
 
-            let casm = commands::compile_contract::compile(sierra_json)?;
-            let casm_json = serde_json::to_value(casm)?;
+            let casm_json = commands::compile_contract::compile(sierra_json)?;
 
             match compile_contract.casm_output_path {
                 Some(output_path) => {
@@ -52,45 +51,22 @@ fn main_execution() -> Result<bool> {
         }
         Commands::CompileRaw(compile_raw) => {
             let sierra_file = File::open(compile_raw.sierra_input_path)
-                .context("Unable to open sierra json file")?;
-            let sierra_json =
-                serde_json::from_reader(sierra_file).context("Unable to read sierra json file")?;
+                .context("Unable to open sierra artifact json file")?;
+            let sierra_json = serde_json::from_reader(sierra_file)
+                .context("Unable to read sierra artifact json file")?;
 
-            let cairo_program = commands::compile_raw::compile(sierra_json)?;
-            let assembled_cairo_program = cairo_program.assemble();
-
-            let bytecode = serde_json::to_value(assembled_cairo_program.bytecode)?;
-            let hints = serde_json::to_value(assembled_cairo_program.hints)?;
-            let debug_info: Vec<(usize, usize)> = cairo_program
-                .debug_info
-                .sierra_statement_info
-                .iter()
-                .map(|statement_debug_info| {
-                    (
-                        statement_debug_info.code_offset,
-                        statement_debug_info.instruction_idx,
-                    )
-                })
-                .collect();
-            let debug_info = serde_json::to_value(debug_info)?;
-
-            let value = json!({
-                "assembled_cairo_program": {
-                    "bytecode": bytecode,
-                    "hints": hints
-                },
-                "debug_info": debug_info
-            });
+            let cairo_program_json = commands::compile_raw::compile(sierra_json)?;
 
             match compile_raw.cairo_program_output_path {
                 Some(output_path) => {
                     let casm_file = File::create(output_path)
-                        .context("Unable to open/create casm json file")?;
+                        .context("Unable to open/create cairo program json file")?;
 
-                    to_writer(casm_file, &value).context("Unable to save casm json file")?;
+                    to_writer(casm_file, &cairo_program_json)
+                        .context("Unable to save cairo program json file")?;
                 }
                 None => {
-                    println!("{}", serde_json::to_string(&value)?);
+                    println!("{}", serde_json::to_string(&cairo_program_json)?);
                 }
             };
         }

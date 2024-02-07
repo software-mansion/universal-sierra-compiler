@@ -3150,6 +3150,7 @@ name = "universal-sierra-compiler"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "cairo-lang-casm 2.5.3",
  "cairo-lang-sierra 2.5.3",
  "cairo-lang-sierra-to-casm 2.5.3",
  "cairo-lang-starknet 1.0.0-alpha.6",
@@ -3159,6 +3160,7 @@ dependencies = [
  "console",
  "fs_extra",
  "indoc 2.0.4",
+ "num-bigint",
  "serde",
  "serde_json",
  "snapbox",

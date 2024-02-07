@@ -1,10 +1,9 @@
 use anyhow::{Context, Result};
 use cairo_lang_sierra::program::Program;
-use cairo_lang_sierra_to_casm::compiler::CairoProgram;
 use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
 use clap::Args;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -23,17 +22,37 @@ pub struct SierraArtifact {
     sierra_program: Program,
 }
 
-// TODO: Support other sierra versions.
 // `sierra_artifact` should be a json containing `sierra_program`
-pub fn compile(sierra_artifact: Value) -> Result<CairoProgram> {
+pub fn compile(sierra_artifact: Value) -> Result<Value> {
     let sierra_artifact: SierraArtifact = serde_json::from_value(sierra_artifact)
         .context("Unable to deserialize Sierra. Make sure it is in a correct format")?;
     let metadata_config = MetadataComputationConfig::default();
     let metadata = calc_metadata(&sierra_artifact.sierra_program, metadata_config)?;
 
-    Ok(cairo_lang_sierra_to_casm::compiler::compile(
+    let cairo_program = cairo_lang_sierra_to_casm::compiler::compile(
         &sierra_artifact.sierra_program,
         &metadata,
         true,
-    )?)
+    )?;
+    let assembled_cairo_program = cairo_program.assemble();
+
+    let debug_info: Vec<(usize, usize)> = cairo_program
+        .debug_info
+        .sierra_statement_info
+        .iter()
+        .map(|statement_debug_info| {
+            (
+                statement_debug_info.code_offset,
+                statement_debug_info.instruction_idx,
+            )
+        })
+        .collect();
+
+    Ok(json!({
+        "assembled_cairo_program": {
+            "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
+            "hints": serde_json::to_value(assembled_cairo_program.hints)?
+        },
+        "debug_info": serde_json::to_value(debug_info)?
+    }))
 }

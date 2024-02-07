@@ -6,8 +6,6 @@ use cairo_lang_starknet_sierra_0_1_0::contract_class::ContractClass as ContractC
 use cairo_lang_starknet_sierra_1_0_0::casm_contract_class::CasmContractClass as CasmContractClassSierraV1;
 use cairo_lang_starknet_sierra_1_0_0::contract_class::ContractClass as ContractClassSierraV1;
 use clap::Args;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use serde_json::Value;
 use std::path::PathBuf;
 
@@ -23,7 +21,7 @@ pub struct CompileContract {
 }
 
 /// `sierra_json` should be a json containing `sierra_program` and `entry_points_by_type`
-pub fn compile(mut sierra_json: Value) -> Result<CasmContractClass> {
+pub fn compile(mut sierra_json: Value) -> Result<Value> {
     sierra_json["abi"] = Value::Null;
     sierra_json["sierra_program_debug_info"] = Value::Null;
     sierra_json["contract_class_version"] = Value::String(String::new());
@@ -32,7 +30,7 @@ pub fn compile(mut sierra_json: Value) -> Result<CasmContractClass> {
         ($sierra_type:ty, $casm_type:ty) => {{
             let sierra_class = serde_json::from_value::<$sierra_type>(sierra_json.clone()).unwrap();
             let casm_class = <$casm_type>::from_contract_class(sierra_class, true).unwrap();
-            return Ok(old_casm_to_newest_casm::<$casm_type>(&casm_class));
+            return Ok(serde_json::to_value(&casm_class)?);
         }};
     }
 
@@ -48,16 +46,6 @@ pub fn compile(mut sierra_json: Value) -> Result<CasmContractClass> {
             )
         }
     }
-}
-
-/// Converts `CasmContractClass` from the old `cairo_lang_starknet` library version
-/// to the `CasmContractClass` from the newest version
-fn old_casm_to_newest_casm<T>(value: &T) -> CasmContractClass
-where
-    T: Serialize + DeserializeOwned,
-{
-    let serialized = serde_json::to_value(value).unwrap();
-    serde_json::from_value::<CasmContractClass>(serialized).unwrap()
 }
 
 /// Extracts sierra version from the program
