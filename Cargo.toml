@@ -1,16 +1,21 @@
 [package]
 name = "universal-sierra-compiler"
+description = "Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ever-existing Sierra version to CASM."
+homepage = "https://github.com/software-mansion/universal-sierra-compiler"
+documentation = "https://github.com/software-mansion/universal-sierra-compiler/blob/master/README.md"
+readme = "README.md"
+repository = "https://github.com/software-mansion/universal-sierra-compiler"
 version = "1.0.0"
 edition = "2021"
+license = "MIT"
 
 
 [dependencies]
 cairo-lang-starknet-sierra-0_1_0 = {package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6"}
 cairo-lang-starknet-sierra-1_0_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo", tag = "v1.0.0-rc0" }
-cairo-lang-starknet = "=2.4.0"
-# TODO: Other versions
-cairo-lang-sierra-to-casm = "=2.4.0"
-cairo-lang-sierra = "=2.4.0"
+cairo-lang-starknet = "2.5.3"
+cairo-lang-sierra-to-casm = "2.5.3"
+cairo-lang-sierra = "2.5.3"
 serde_json = "1.0.108"
 serde = "1.0.193"
 clap = "4.4.11"
