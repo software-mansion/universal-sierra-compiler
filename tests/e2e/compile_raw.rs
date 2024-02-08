@@ -5,6 +5,7 @@ use num_bigint::BigInt;
 use serde_json::Value;
 use std::fs::File;
 use std::path::PathBuf;
+use test_case::test_case;
 
 fn verify_output_file(output_path: PathBuf) {
     let file = File::open(output_path).unwrap();
@@ -80,9 +81,10 @@ fn wrong_json() {
     "});
 }
 
-#[test]
-fn test_happy_case() {
-    let sierra_file_name = "sierra_1_4_0.json";
+#[test_case("1_5_0"; "sierra 1.5.0")]
+#[test_case("1_4_0"; "sierra 1.4.0")]
+fn test_happy_case(sierra_version: &str) {
+    let sierra_file_name = "sierra_".to_string() + sierra_version + ".json";
     let cairo_program_file_name = "casm.json";
     let args = vec![
         "compile-raw",
@@ -92,7 +94,7 @@ fn test_happy_case() {
         cairo_program_file_name,
     ];
 
-    let temp_dir = temp_dir_with_sierra_file("sierra_raw", sierra_file_name);
+    let temp_dir = temp_dir_with_sierra_file("sierra_raw", &sierra_file_name);
     let snapbox = runner(args, &temp_dir);
 
     snapbox.assert().success();
