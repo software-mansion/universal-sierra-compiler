@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use cairo_lang_sierra::program::Program;
+use cairo_lang_sierra_to_casm::compiler::CairoProgramDebugInfo;
 use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
 use clap::Args;
 use serde::Deserialize;
@@ -36,8 +37,17 @@ pub fn compile(sierra_artifact: Value) -> Result<Value> {
     )?;
     let assembled_cairo_program = cairo_program.assemble();
 
-    let debug_info: Vec<(usize, usize)> = cairo_program
-        .debug_info
+    Ok(json!({
+        "assembled_cairo_program": {
+            "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
+            "hints": serde_json::to_value(assembled_cairo_program.hints)?
+        },
+        "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?
+    }))
+}
+
+fn serialize_cairo_program_debug_info(debug_info: &CairoProgramDebugInfo) -> Vec<(usize, usize)> {
+    debug_info
         .sierra_statement_info
         .iter()
         .map(|statement_debug_info| {
@@ -46,13 +56,5 @@ pub fn compile(sierra_artifact: Value) -> Result<Value> {
                 statement_debug_info.instruction_idx,
             )
         })
-        .collect();
-
-    Ok(json!({
-        "assembled_cairo_program": {
-            "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
-            "hints": serde_json::to_value(assembled_cairo_program.hints)?
-        },
-        "debug_info": serde_json::to_value(debug_info)?
-    }))
+        .collect()
 }

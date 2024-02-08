@@ -26,10 +26,10 @@ fn print_error_message(error: &Error) {
     println!("[{error_tag}] {error}");
 }
 
-fn read_sierra(input_file_path: PathBuf) -> Result<Value> {
-    let sierra_file = File::open(input_file_path).context("Unable to open sierra json file")?;
+fn read_json(file_path: PathBuf) -> Result<Value> {
+    let sierra_file = File::open(file_path).context("Unable to open json file")?;
 
-    serde_json::from_reader(sierra_file).context("Unable to read sierra json file")
+    serde_json::from_reader(sierra_file).context("Unable to read json file")
 }
 
 fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
@@ -53,14 +53,14 @@ fn main_execution() -> Result<bool> {
 
     match cli.command {
         Commands::CompileContract(compile_contract) => {
-            let sierra_json = read_sierra(compile_contract.sierra_input_path)?;
+            let sierra_json = read_json(compile_contract.sierra_input_path)?;
 
             let casm_json = commands::compile_contract::compile(sierra_json)?;
 
             output_casm(&casm_json, compile_contract.casm_output_path)?;
         }
         Commands::CompileRaw(compile_raw) => {
-            let sierra_json = read_sierra(compile_raw.sierra_input_path)?;
+            let sierra_json = read_json(compile_raw.sierra_input_path)?;
 
             let cairo_program_json = commands::compile_raw::compile(sierra_json)?;
 
