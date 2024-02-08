@@ -1,4 +1,4 @@
-use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use indoc::indoc;
 use snapbox::cmd::{cargo_bin, Command};
 use std::fs::File;
@@ -88,6 +88,7 @@ fn wrong_json() {
     "});
 }
 
+#[test_case("1_5_0"; "sierra 1.5.0")]
 #[test_case("1_4_0"; "sierra 1.4.0")]
 #[test_case("1_3_0"; "sierra 1.3.0")]
 #[test_case("1_2_0"; "sierra 1.2.0")]
