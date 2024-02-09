@@ -17,7 +17,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    // Compile sierra of the contract
     CompileContract(CompileContract),
+
+    // Compile sierra program (cairo_lang_sierra::program::Program)
     CompileRaw(CompileRaw),
 }
 
