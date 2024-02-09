@@ -1,21 +1,27 @@
 use anyhow::{Context, Error, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use console::style;
-use serde_json::to_writer;
+use serde_json::{to_writer, Value};
 use std::fs::File;
 use std::path::PathBuf;
-use universal_sierra_compiler::compile;
+use universal_sierra_compiler::commands;
+use universal_sierra_compiler::commands::compile_contract::CompileContract;
+use universal_sierra_compiler::commands::compile_raw::CompileRaw;
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(version)]
-struct Args {
-    /// Path to the sierra json file
-    #[arg(short, long)]
-    sierra_input_path: PathBuf,
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    /// Path to where casm json file will be saved
-    #[arg(short, long)]
-    casm_output_path: Option<PathBuf>,
+#[derive(Subcommand)]
+enum Commands {
+    // Compile sierra of the contract
+    CompileContract(CompileContract),
+
+    // Compile sierra program (cairo_lang_sierra::program::Program)
+    CompileRaw(CompileRaw),
 }
 
 fn print_error_message(error: &Error) {
@@ -23,27 +29,47 @@ fn print_error_message(error: &Error) {
     println!("[{error_tag}] {error}");
 }
 
-fn main_execution() -> Result<bool> {
-    let args = Args::parse();
+fn read_json(file_path: PathBuf) -> Result<Value> {
+    let sierra_file = File::open(file_path).context("Unable to open json file")?;
 
-    let sierra_file =
-        File::open(args.sierra_input_path).context("Unable to open sierra json file")?;
-    let sierra_json =
-        serde_json::from_reader(sierra_file).context("Unable to read sierra json file")?;
+    serde_json::from_reader(sierra_file).context("Unable to read json file")
+}
 
-    let casm_json = compile(sierra_json)?;
-
-    match args.casm_output_path {
+fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
+    match output_file_path {
         Some(output_path) => {
             let casm_file =
                 File::create(output_path).context("Unable to open/create casm json file")?;
 
-            to_writer(casm_file, &casm_json).context("Unable to save casm json file")?;
+            to_writer(casm_file, &output_json).context("Unable to save casm json file")?;
         }
         None => {
-            println!("{}", serde_json::to_string(&casm_json)?);
+            println!("{}", serde_json::to_string(&output_json)?);
         }
     };
+
+    Ok(())
+}
+
+fn main_execution() -> Result<bool> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::CompileContract(compile_contract) => {
+            let sierra_json = read_json(compile_contract.sierra_path)?;
+
+            let casm_json = commands::compile_contract::compile(sierra_json)?;
+
+            output_casm(&casm_json, compile_contract.output_path)?;
+        }
+        Commands::CompileRaw(compile_raw) => {
+            let sierra_json = read_json(compile_raw.sierra_path)?;
+
+            let cairo_program_json = commands::compile_raw::compile(sierra_json)?;
+
+            output_casm(&cairo_program_json, compile_raw.output_path)?;
+        }
+    }
 
     Ok(true)
 }
