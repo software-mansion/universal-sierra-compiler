@@ -1,5 +1,5 @@
 use crate::e2e::{runner, temp_dir_with_sierra_file};
-use cairo_lang_starknet::casm_contract_class::CasmContractClass;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use indoc::indoc;
 use std::fs::File;
 use std::path::PathBuf;
@@ -66,6 +66,7 @@ fn wrong_json() {
     "});
 }
 
+#[test_case("1_5_0"; "sierra 1.5.0")]
 #[test_case("1_4_0"; "sierra 1.4.0")]
 #[test_case("1_3_0"; "sierra 1.3.0")]
 #[test_case("1_2_0"; "sierra 1.2.0")]
