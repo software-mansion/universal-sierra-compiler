@@ -11,16 +11,17 @@ use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct CompileContract {
-    /// Path to the sierra json file
+    /// Path to the sierra json file, which should have
+    /// `sierra_program` and `entry_points_by_type` fields
     #[arg(short, long)]
-    pub sierra_input_path: PathBuf,
+    pub sierra_path: PathBuf,
 
-    /// Path to where casm json file will be saved
+    /// Path to where casm json file will be saved.
+    /// It will be serialized cairo_lang_starknet::casm_contract_class::CasmContractClass
     #[arg(short, long)]
-    pub casm_output_path: Option<PathBuf>,
+    pub output_path: Option<PathBuf>,
 }
 
-/// `sierra_json` should be a json containing `sierra_program` and `entry_points_by_type`
 pub fn compile(mut sierra_json: Value) -> Result<Value> {
     sierra_json["abi"] = Value::Null;
     sierra_json["sierra_program_debug_info"] = Value::Null;

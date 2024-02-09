@@ -31,9 +31,9 @@ fn write_to_existing_file() {
     let cairo_program_file_name = "cairo_program.json";
     let args = vec![
         "compile-raw",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--cairo-program-output-path",
+        "--output-path",
         cairo_program_file_name,
     ];
 
@@ -51,7 +51,7 @@ fn write_to_existing_file() {
 #[test]
 fn write_to_stdout() {
     let sierra_file_name = "sierra_1_4_0.json";
-    let args = vec!["compile-raw", "--sierra-input-path", &sierra_file_name];
+    let args = vec!["compile-raw", "--sierra-path", &sierra_file_name];
 
     let temp_dir = temp_dir_with_sierra_file("sierra_raw", sierra_file_name);
     let snapbox = runner(args, &temp_dir);
@@ -67,9 +67,9 @@ fn wrong_json() {
     let cairo_program_file_name = "casm.json";
     let args = vec![
         "compile-raw",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--cairo-program-output-path",
+        "--output-path",
         cairo_program_file_name,
     ];
 
@@ -77,7 +77,7 @@ fn wrong_json() {
     let snapbox = runner(args, &temp_dir);
 
     snapbox.assert().failure().stdout_eq(indoc! {r"
-        [ERROR] Unable to deserialize Sierra. Make sure it is in a correct format
+        [ERROR] Unable to deserialize Sierra program. Make sure it is in a correct format
     "});
 }
 
@@ -88,9 +88,9 @@ fn test_happy_case(sierra_version: &str) {
     let cairo_program_file_name = "casm.json";
     let args = vec![
         "compile-raw",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--cairo-program-output-path",
+        "--output-path",
         cairo_program_file_name,
     ];
 

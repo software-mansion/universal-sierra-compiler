@@ -53,18 +53,18 @@ fn main_execution() -> Result<bool> {
 
     match cli.command {
         Commands::CompileContract(compile_contract) => {
-            let sierra_json = read_json(compile_contract.sierra_input_path)?;
+            let sierra_json = read_json(compile_contract.sierra_path)?;
 
             let casm_json = commands::compile_contract::compile(sierra_json)?;
 
-            output_casm(&casm_json, compile_contract.casm_output_path)?;
+            output_casm(&casm_json, compile_contract.output_path)?;
         }
         Commands::CompileRaw(compile_raw) => {
-            let sierra_json = read_json(compile_raw.sierra_input_path)?;
+            let sierra_json = read_json(compile_raw.sierra_path)?;
 
             let cairo_program_json = commands::compile_raw::compile(sierra_json)?;
 
-            output_casm(&cairo_program_json, compile_raw.cairo_program_output_path)?;
+            output_casm(&cairo_program_json, compile_raw.output_path)?;
         }
     }
 

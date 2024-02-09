@@ -18,9 +18,9 @@ fn write_to_existing_file() {
     let casm_file_name = "casm.json";
     let args = vec![
         "compile-contract",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--casm-output-path",
+        "--output-path",
         casm_file_name,
     ];
 
@@ -37,7 +37,7 @@ fn write_to_existing_file() {
 #[test]
 fn write_to_stdout() {
     let sierra_file_name = "sierra_1_4_0.json";
-    let args = vec!["compile-contract", "--sierra-input-path", &sierra_file_name];
+    let args = vec!["compile-contract", "--sierra-path", &sierra_file_name];
 
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
     let snapbox = runner(args, &temp_dir);
@@ -52,9 +52,9 @@ fn wrong_json() {
     let casm_file_name = "casm.json";
     let args = vec![
         "compile-contract",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--casm-output-path",
+        "--output-path",
         casm_file_name,
     ];
 
@@ -77,9 +77,9 @@ fn test_happy_case(sierra_version: &str) {
     let casm_file_name = "casm.json";
     let args = vec![
         "compile-contract",
-        "--sierra-input-path",
+        "--sierra-path",
         &sierra_file_name,
-        "--casm-output-path",
+        "--output-path",
         casm_file_name,
     ];
 
