@@ -4,6 +4,7 @@ Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ev
 
 | Supported Sierra Versions |
 |---------------------------|
+| 1.5.0                     |
 | ~1.4.0                    |
 | ~1.3.0                    |
 | ~1.2.0                    |
@@ -28,11 +29,22 @@ universal-sierra-compiler (v1.0.0) has been installed successfully.
 
 ## Usage
 
-To use the tool, just pass a path to a file with Sierra in json format:
+Tool consist of two subcommands:
+
+- `compile-contract`
+- `compile-raw`
+
+The first one compiles Sierra of the Starknet contract, while the second one compiles Sierra of the plain Cairo code.
+
+### `compile-contract` subcommand
+
+The input of this subcommand is a path to a file with Sierra of the contract
+(`cairo_lang_starknet_classes::contract_class::ContractClass`) in json format:
 
 ```shell
 $ universal-sierra-compiler \
-  --sierra-input-path ./path/to/sierra.json
+  compile-contract \
+  --sierra-path ./path/to/sierra.json
   
 {"bytecode": ...}
 ```
@@ -41,10 +53,36 @@ $ universal-sierra-compiler \
 > 
 > Please, note that the output is in the JSON format.
 
-To automatically save CASM, pass `casm-output-path` argument:
+To automatically save CASM, pass `--output-path` argument:
 
 ```shell
 $ universal-sierra-compiler \
-  --sierra-input-path ./path/to/sierra.json
-  --casm-output-path ./path/to/casm.json
+    compile-contract \
+      --sierra-path ./path/to/sierra.json
+      --output-path ./path/to/casm.json
+```
+
+### `compile-raw` subcommand
+
+The input of this subcommand is a path to a file with Sierra program (`cairo_lang_sierra::program::Program`) in json format:
+
+```shell
+$ universal-sierra-compiler \
+    compile-raw \
+      --sierra-path ./path/to/sierra.json
+  
+{"assembled_cairo_program": ...}
+```
+
+> 📝 **Note**
+>
+> Please, note that the output is in the JSON format.
+
+To automatically save assebled cairo program, pass `--output-path` argument:
+
+```shell
+$ universal-sierra-compiler \
+    compile-raw \
+      --sierra-path ./path/to/sierra.json
+      --output-path ./path/to/casm.json
 ```
