@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 cairo-lang-starknet-sierra-0_1_0 = {package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6"}
 cairo-lang-starknet-sierra-1_0_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo", tag = "v1.0.0-rc0" }
-cairo-lang-starknet = "=2.4.0"
+cairo-lang-starknet-classes = "2.6.0-rc.0"
 serde_json = "1.0.108"
 serde = "1.0.193"
 clap = "4.4.11"
