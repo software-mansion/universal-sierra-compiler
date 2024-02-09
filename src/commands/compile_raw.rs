@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use cairo_lang_sierra::program::Program;
-use cairo_lang_sierra_to_casm::compiler::CairoProgramDebugInfo;
+use cairo_lang_sierra_to_casm::compiler::{CairoProgramDebugInfo, SierraToCasmConfig};
 use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
 use clap::Args;
 use serde_json::{json, Value};
@@ -25,8 +25,14 @@ pub fn compile(sierra_program: Value) -> Result<Value> {
     let metadata_config = MetadataComputationConfig::default();
     let metadata = calc_metadata(&sierra_program, metadata_config)?;
 
-    let cairo_program =
-        cairo_lang_sierra_to_casm::compiler::compile(&sierra_program, &metadata, true)?;
+    let cairo_program = cairo_lang_sierra_to_casm::compiler::compile(
+        &sierra_program,
+        &metadata,
+        SierraToCasmConfig {
+            gas_usage_check: true,
+            max_bytecode_size: usize::MAX,
+        },
+    )?;
     let assembled_cairo_program = cairo_program.assemble();
 
     Ok(json!({

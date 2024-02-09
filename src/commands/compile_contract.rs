@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
-use cairo_lang_starknet::casm_contract_class::CasmContractClass;
-use cairo_lang_starknet::contract_class::ContractClass;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use cairo_lang_starknet_classes::contract_class::ContractClass;
 use cairo_lang_starknet_sierra_0_1_0::casm_contract_class::CasmContractClass as CasmContractClassSierraV0;
 use cairo_lang_starknet_sierra_0_1_0::contract_class::ContractClass as ContractClassSierraV0;
 use cairo_lang_starknet_sierra_1_0_0::casm_contract_class::CasmContractClass as CasmContractClassSierraV1;
@@ -37,7 +37,12 @@ pub fn compile(mut sierra_json: Value) -> Result<Value> {
 
     let sierra_version = parse_sierra_version(&sierra_json)?;
     match sierra_version.as_slice() {
-        [1, 2..=4, ..] => compile_contract!(ContractClass, CasmContractClass),
+        [1, 2..=5, ..] => {
+            let sierra_class: ContractClass = serde_json::from_value(sierra_json.clone()).unwrap();
+            let casm_class =
+                CasmContractClass::from_contract_class(sierra_class, true, usize::MAX).unwrap();
+            Ok(serde_json::to_value(casm_class)?)
+        }
         [1, 0..=1, 0] => compile_contract!(ContractClassSierraV1, CasmContractClassSierraV1),
         [0, ..] => compile_contract!(ContractClassSierraV0, CasmContractClassSierraV0),
         _ => {
