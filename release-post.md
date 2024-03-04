@@ -58,7 +58,7 @@ Only then, if you would need to use the newest Sierra, you should update the USC
 
 ## Why is USC a binary?
 
-We would like USC to be a as separate of a tool as possible. It should require the users to bump it only when a new Sierra version comes out.
+We would like USC to be as decoupled from other tools as possible. It should require the users to bump it only when a new Sierra version comes out, without the need to re-integrate it in the software that runs it.
 
 If however, you would still prefer to use USC as a crate, please write a comment below, or [open an issue](https://github.com/software-mansion/universal-sierra-compiler/issues/new) so we can discuss it further.
 
