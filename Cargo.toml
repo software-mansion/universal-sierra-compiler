@@ -15,7 +15,7 @@ cairo-lang-starknet-sierra-0_1_0 = {package = "cairo-lang-starknet", git = "http
 cairo-lang-starknet-sierra-1_0_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo", tag = "v1.0.0-rc0" }
 cairo-lang-sierra-to-casm = "=2.6.0"
 cairo-lang-sierra = "=2.6.0"
-cairo-lang-starknet-classes = "2.6.0-rc.1"
+cairo-lang-starknet-classes = "2.6.0"
 serde_json = "1.0.108"
 serde = "1.0.193"
 clap = "4.4.11"
