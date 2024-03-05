@@ -14,13 +14,18 @@ Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ev
 
 ## Installation
 
-To install the binary on your PATH run the following line
+To install the latest stable version of `universal-sierra-binary` run:
 
 ```shell
 curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh
+```
 
-...
-universal-sierra-compiler (v1.0.0) has been installed successfully.
+You almost always want to install the latest stable version. 
+In rare cases where a prerelease with a new unstable sierra version exists and you want to use it,
+run the following command with the requested prerelease version:
+
+```shell
+curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh -s -- v2.0.0-rc.0
 ```
 
 > 📝 **Note**
