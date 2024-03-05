@@ -25,7 +25,7 @@ In rare cases where a prerelease with a new unstable sierra version exists and y
 run the following command with the requested prerelease version:
 
 ```shell
-curl -L https://raw.githubusercontent.com/software-mansion/cairo-profiler/main/scripts/install.sh | sh -s -- v0.2.0-rc.0
+curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh -s -- v0.2.0-rc.0
 ```
 
 > 📝 **Note**
