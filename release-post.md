@@ -13,11 +13,11 @@ Universal Sierra Compiler might become especially useful for nodes, which have t
 
 ## Usage
 
-| Command          | Purpose                               | Input                        | Input as JSON of Cairo struct                              | Output as JSON of Cairo struct |
-|------------------|---------------------------------------|------------------------------|------------------------------------------------------------|-|
-| compile-contract | compile Sierra of a Starknet contract | output of `cairo-compile`    | cairo_lang_starknet_classes::contract_class::ContractClass | cairo_lang_starknet::casm_contract_class::CasmContractClass |
-| compile-raw      | compile Sierra of a Cairo program     | output of `starknet-compile` | cairo_lang_sierra::program::Program                        | |
-|                  |                                       |                              |                                                            | |
+| Command          | Purpose                               | Input                        |
+|------------------|---------------------------------------|------------------------------|
+| compile-contract | compile Sierra of a Starknet contract | output of `cairo-compile`    |
+| compile-raw      | compile Sierra of a Cairo program     | output of `starknet-compile` |
+|                  |                                       |                              |
 
 
 ```shell
@@ -35,23 +35,24 @@ Use the provided script to install the latest version of Universal Sierra Compil
 curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh
 
 ...
-universal-sierra-compiler (v1.0.0) has been installed successfully.
+universal-sierra-compiler (v2.0.0) has been installed successfully.
 ```
 
 It is also possible to install a specific version of USC by passing, for example:
 
 ```shell
-| sh -s v2.0.0-rc0
+curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh -s v2.0.0
 ```
 
 however, since USC aims to be backwards-compatible itself, it should be enough to always use the latest version (e.g. on CI).
 
-Note that versions of USC that are `release candidate` (rc) will not be fetched when installing the latest version. For that you would need to specify a concrete version.
+If you wish to use sierra version from Cairo `release candidate` (`rc`) you would want to use an `rc` version of USC as well.
+Note that `rc` versions of USC will not be fetched when installing the latest version. For that you would need to specify a concrete `rc` version.
 
 
 ## When to update USC?
 
-We aim to prioritize creating a new release of USC available on GitHub, as soon as a new Sierra version comes out.
+We aim to prioritize creating a new release of USC available on [GitHub](https://github.com/software-mansion/universal-sierra-compiler/releases), as soon as a new Sierra version comes out.
 
 Only then, if you would need to use the newest Sierra, you should update the USC version.
 
