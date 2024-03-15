@@ -1,6 +1,6 @@
 use std::fs::File;
 use test_case::test_case;
-use universal_sierra_compiler::commands;
+use universal_sierra_compiler::compile_contract;
 
 #[test]
 fn wrong_json() {
@@ -8,7 +8,7 @@ fn wrong_json() {
         "wrong": "data"
     });
 
-    let casm_class = commands::compile_contract::compile(sierra_json);
+    let casm_class = compile_contract(sierra_json);
     assert!(casm_class.is_err());
 }
 
@@ -25,6 +25,6 @@ fn compile_sierra(sierra_version: &str) {
             .unwrap();
     let sierra_json = serde_json::from_reader(file).unwrap();
 
-    let casm_class = commands::compile_contract::compile(sierra_json);
+    let casm_class = compile_contract(sierra_json);
     assert!(casm_class.is_ok());
 }
