@@ -30,7 +30,3 @@ fs_extra = "1.3.0"
 test-case = "3.3.1"
 num-bigint = "0.4.4"
 cairo-lang-casm = { version = "2.6.0", features = ["serde"] }
-
-[[bin]]
-name = "universal-sierra-compiler"
-path = "src/main.rs"
