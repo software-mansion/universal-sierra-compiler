@@ -34,6 +34,7 @@ curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-comp
 
 ## Usage
 
+### Command line tool
 Tool consist of two subcommands:
 
 - `compile-contract`
@@ -91,3 +92,13 @@ $ universal-sierra-compiler \
       --sierra-path ./path/to/sierra.json
       --output-path ./path/to/casm.json
 ```
+
+### Library
+
+Library crate exports two functions: 
+
+- `compile_contract(serde_json::Value) -> Result<serde_json::Value>`
+- `compile_raw(serde_json::Value) -> Result<serde_json::Value>`
+
+They do the same as their CLI counterparts. However, they accept the whole program in json format as a parameter, precisely a `json_serde::Value`.
+Return value is the compiled program inside `Result<serde_json::Value>`.
