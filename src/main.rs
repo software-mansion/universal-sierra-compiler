@@ -4,9 +4,11 @@ use console::style;
 use serde_json::{to_writer, Value};
 use std::fs::File;
 use std::path::PathBuf;
-use universal_sierra_compiler::commands;
-use universal_sierra_compiler::commands::compile_contract::CompileContract;
-use universal_sierra_compiler::commands::compile_raw::CompileRaw;
+
+mod commands;
+
+use commands::compile_contract::CompileContract;
+use commands::compile_raw::CompileRaw;
 
 #[derive(Parser)]
 #[command(version)]

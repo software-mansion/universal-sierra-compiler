@@ -19,6 +19,7 @@ pub struct CompileRaw {
     pub output_path: Option<PathBuf>,
 }
 
+/// Compiles Sierra of the plain Cairo code.
 pub fn compile(sierra_program: Value) -> Result<Value> {
     let sierra_program: Program = serde_json::from_value(sierra_program)
         .context("Unable to deserialize Sierra program. Make sure it is in a correct format")?;

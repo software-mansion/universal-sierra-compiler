@@ -22,6 +22,7 @@ pub struct CompileContract {
     pub output_path: Option<PathBuf>,
 }
 
+/// Compiles Sierra of the Starknet contract.
 pub fn compile(mut sierra_json: Value) -> Result<Value> {
     sierra_json["abi"] = Value::Null;
     sierra_json["sierra_program_debug_info"] = Value::Null;
