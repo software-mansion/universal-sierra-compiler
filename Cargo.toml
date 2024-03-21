@@ -11,8 +11,8 @@ license = "MIT"
 
 
 [dependencies]
-cairo-lang-starknet-sierra-0_1_0 = {package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6"}
-cairo-lang-starknet-sierra-1_0_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo", tag = "v1.0.0-rc0" }
+cairo-lang-starknet-sierra-0_1_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6", version = "=1.0.0-alpha.6" }
+cairo-lang-starknet-sierra-1_0_0 = { package = "universal-sierra-compiler-cairo-lang-starknet-proxy", version = "=0.2.0" }
 cairo-lang-sierra-to-casm = "=2.6.0"
 cairo-lang-sierra = "=2.6.0"
 cairo-lang-starknet-classes = "2.6.0"
