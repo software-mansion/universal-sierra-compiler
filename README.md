@@ -20,7 +20,7 @@ To install the latest stable version of `universal-sierra-binary` run:
 ```shell
 curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh
 ```
-Alternatively, to use USC as a rust dependency, just put it in your `Cargo.toml` like so:
+Alternatively, to use USC as a Rust dependency, just put it in your `Cargo.toml` like so:
 ```
 universal-sierra-compiler = "2.1.0"
 ```
