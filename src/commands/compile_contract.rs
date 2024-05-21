@@ -17,7 +17,7 @@ pub struct CompileContract {
     pub sierra_path: PathBuf,
 
     /// Path to where casm json file will be saved.
-    /// It will be serialized cairo_lang_starknet::casm_contract_class::CasmContractClass
+    /// It will be serialized `cairo_lang_starknet::casm_contract_class::CasmContractClass`
     #[arg(short, long)]
     pub output_path: Option<PathBuf>,
 }
