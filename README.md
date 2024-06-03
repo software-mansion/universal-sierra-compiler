@@ -1,6 +1,7 @@
 # Universal-Sierra-Compiler
+![Crates.io Version](https://img.shields.io/crates/v/universal-sierra-compiler?logo=rust)
 
-Universal-Sierra-Compiler is the tool for Sierra compilation. It compiles any ever-existing Sierra version to CASM.
+Universal-Sierra-Compiler is the tool/crate for Sierra compilation. It compiles any ever-existing Sierra version to CASM.
 
 | Supported Sierra Versions |
 |---------------------------|
@@ -19,9 +20,13 @@ To install the latest stable version of `universal-sierra-binary` run:
 ```shell
 curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh
 ```
+Alternatively, to use USC as a Rust dependency, just put it in your `Cargo.toml` like so:
+```
+universal-sierra-compiler = "2.1.0"
+```
 
 You almost always want to install the latest stable version. 
-In rare cases where a prerelease with a new unstable sierra version exists and you want to use it,
+In rare cases where a prerelease with a new unstable sierra version exists, and you want to use it,
 run the following command with the requested prerelease version:
 
 ```shell
@@ -32,7 +37,7 @@ curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-comp
 >
 > If the script can't add installed binary to the PATH, it will print the instructions about adding it manually. 
 
-## Usage
+## Using as a binary
 
 ### Command line tool
 Tool consist of two subcommands:
@@ -93,7 +98,7 @@ $ universal-sierra-compiler \
       --output-path ./path/to/casm.json
 ```
 
-### Library
+## Using as a library
 
 Library crate exports two functions: 
 
