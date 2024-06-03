@@ -36,10 +36,23 @@ pub fn compile(sierra_program: Value) -> Result<Value> {
     )?;
     let assembled_cairo_program = cairo_program.assemble();
 
+    // taken from cairo compiler.
+    let builtins = vec![
+            "pedersen_builtin",
+            "range_check_builtin",
+            "bitwise_builtin",
+            "ec_op_builtin",
+            "poseidon_builtin",
+        ];
+    
+    let entry_point = calculate_entry_point(&sierra_program, "::main")?;
+    
     Ok(json!({
         "assembled_cairo_program": {
             "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
-            "hints": serde_json::to_value(assembled_cairo_program.hints)?
+            "hints": serde_json::to_value(assembled_cairo_program.hints)?,
+            "builtins": serde_json::to_value(builtins)?,
+            "entry_point": serde_json::to_value(entry_point)?
         },
         "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?
     }))
@@ -56,4 +69,16 @@ fn serialize_cairo_program_debug_info(debug_info: &CairoProgramDebugInfo) -> Vec
             )
         })
         .collect()
+}
+
+/// Finds first function ending with `name_suffix` and calculates the entry point.
+fn calculate_entry_point(sierra_program: &Program, name_suffix: &str) -> Result<usize> {
+    let main_func = sierra_program.funcs.iter().find(|f| {
+        if let Some(name) = &f.id.debug_name {
+            name.ends_with(name_suffix)
+        } else {
+            false
+        }
+    }).ok_or_else(|| anyhow::Error::msg("Main function not found in the Sierra program"))?;
+    Ok(main_func.entry_point.0)
 }

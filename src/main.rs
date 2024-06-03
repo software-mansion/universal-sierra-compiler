@@ -1,7 +1,7 @@
 use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use console::style;
-use serde_json::{to_writer, Value};
+use serde_json::{to_writer_pretty, Value};
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -43,7 +43,7 @@ fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result
             let casm_file =
                 File::create(output_path).context("Unable to open/create casm json file")?;
 
-            to_writer(casm_file, &output_json).context("Unable to save casm json file")?;
+            to_writer_pretty(casm_file, &output_json).context("Unable to save casm json file")?;
         }
         None => {
             println!("{}", serde_json::to_string(&output_json)?);
