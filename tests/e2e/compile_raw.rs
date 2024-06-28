@@ -76,7 +76,7 @@ fn wrong_json() {
     let temp_dir = temp_dir_with_sierra_file("", sierra_file_name);
     let snapbox = runner(args, &temp_dir);
 
-    snapbox.assert().failure().stdout_eq(indoc! {r"
+    snapbox.assert().failure().stderr_eq(indoc! {r"
         [ERROR] Unable to deserialize Sierra program. Make sure it is in a correct format
     "});
 }
