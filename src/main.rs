@@ -28,7 +28,7 @@ enum Commands {
 
 fn print_error_message(error: &Error) {
     let error_tag = style("ERROR").red();
-    println!("[{error_tag}] {error}");
+    eprintln!("[{error_tag}] {error}");
 }
 
 fn read_json(file_path: PathBuf) -> Result<Value> {
