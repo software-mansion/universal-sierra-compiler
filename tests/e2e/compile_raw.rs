@@ -81,6 +81,7 @@ fn wrong_json() {
     "});
 }
 
+#[test_case("1_6_0"; "sierra 1.6.0")]
 #[test_case("1_5_0"; "sierra 1.5.0")]
 #[test_case("1_4_0"; "sierra 1.4.0")]
 fn test_happy_case(sierra_version: &str) {
