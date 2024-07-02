@@ -4,7 +4,7 @@ description = "Universal-Sierra-Compiler is the tool for Sierra compilation. It 
 homepage = "https://github.com/software-mansion/universal-sierra-compiler"
 readme = "README.md"
 repository = "https://github.com/software-mansion/universal-sierra-compiler"
-version = "2.1.0"
+version = "2.2.0-rc.0"
 edition = "2021"
 license = "MIT"
 
