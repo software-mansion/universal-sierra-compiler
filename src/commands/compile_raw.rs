@@ -51,7 +51,7 @@ fn serialize_cairo_program_debug_info(debug_info: &CairoProgramDebugInfo) -> Vec
         .iter()
         .map(|statement_debug_info| {
             (
-                statement_debug_info.code_offset,
+                statement_debug_info.start_offset,
                 statement_debug_info.instruction_idx,
             )
         })
