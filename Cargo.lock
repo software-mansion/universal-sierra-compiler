@@ -2663,7 +2663,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "universal-sierra-compiler"
-version = "2.2.0-rc.0"
+version = "2.2.0-rc.1"
 dependencies = [
  "anyhow",
  "cairo-lang-casm 2.7.0-rc.0",

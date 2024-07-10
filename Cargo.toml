@@ -4,7 +4,7 @@ description = "Universal-Sierra-Compiler is the tool for Sierra compilation. It 
 homepage = "https://github.com/software-mansion/universal-sierra-compiler"
 readme = "README.md"
 repository = "https://github.com/software-mansion/universal-sierra-compiler"
-version = "2.2.0-rc.0"
+version = "2.2.0-rc.1"
 edition = "2021"
 license = "MIT"
 
@@ -12,8 +12,8 @@ license = "MIT"
 [dependencies]
 cairo-lang-starknet-sierra-0_1_0 = { package = "cairo-lang-starknet", git = "https://github.com/starkware-libs/cairo.git", tag = "v1.0.0-alpha.6", version = "1.0.0-alpha.6" }
 cairo-lang-starknet-sierra-1_0_0 = { package = "universal-sierra-compiler-cairo-lang-starknet-proxy", version = "=0.2.0" }
-cairo-lang-sierra-to-casm = "=2.7.0-rc.0"
-cairo-lang-sierra = "=2.7.0-rc.0"
+cairo-lang-sierra-to-casm = "2.7.0-rc.0"
+cairo-lang-sierra = "2.7.0-rc.0"
 cairo-lang-starknet-classes = "2.7.0-rc.0"
 serde_json = "1.0.108"
 serde = "1.0.193"
