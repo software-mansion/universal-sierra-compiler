@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use console::style;
 use serde_json::{to_writer, Value};
 use std::fs::File;
+use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
 mod commands;
@@ -33,8 +34,9 @@ fn print_error_message(error: &Error) {
 
 fn read_json(file_path: PathBuf) -> Result<Value> {
     let sierra_file = File::open(file_path).context("Unable to open json file")?;
+    let sierra_file_reader = BufReader::new(sierra_file);
 
-    serde_json::from_reader(sierra_file).context("Unable to read json file")
+    serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
 }
 
 fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
@@ -42,8 +44,9 @@ fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result
         Some(output_path) => {
             let casm_file =
                 File::create(output_path).context("Unable to open/create casm json file")?;
+            let casm_file_writer = BufWriter::new(casm_file);
 
-            to_writer(casm_file, &output_json).context("Unable to save casm json file")?;
+            to_writer(casm_file_writer, &output_json).context("Unable to save casm json file")?;
         }
         None => {
             println!("{}", serde_json::to_string(&output_json)?);
