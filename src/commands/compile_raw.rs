@@ -21,6 +21,8 @@ pub struct CompileRaw {
 
 /// Compiles Sierra of the plain Cairo code.
 pub fn compile(sierra_program: Value) -> Result<Value> {
+    println!("Compiling Sierra to Casm using USC...");
+
     let sierra_program: Program = serde_json::from_value(sierra_program)
         .context("Unable to deserialize Sierra program. Make sure it is in a correct format")?;
     let metadata_config = MetadataComputationConfig::default();

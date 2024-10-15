@@ -24,6 +24,8 @@ pub struct CompileContract {
 
 /// Compiles Sierra of the Starknet contract.
 pub fn compile(mut sierra_json: Value) -> Result<Value> {
+    println!("Compiling Sierra to Casm using USC...");
+
     sierra_json["abi"] = Value::Null;
     sierra_json["sierra_program_debug_info"] = Value::Null;
     sierra_json["contract_class_version"] = Value::String(String::new());
