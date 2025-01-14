@@ -69,10 +69,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@439cf607258077187679211f12aa6f19af4a0af7
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          # Hack for Rust 1.80 - type inference went crazy and didn't allow to build a library
-          toolchain: 1.79.0
           target: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
