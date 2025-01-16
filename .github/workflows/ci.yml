@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79.0
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
-      # Hack for Rust 1.80 - type inference went crazy and didn't allow to build a library
-      - run: rustup default 1.79.0
       - run: cargo test --release
 
   rustfmt:
@@ -25,10 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79.0
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
-      # Hack for Rust 1.79 - rustfmt is just not there?
-      - run: rustup component add rustfmt
       - run: cargo fmt --check
 
   clippy:
@@ -39,10 +35,8 @@ jobs:
       RUSTFLAGS: "-Dwarnings"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79.0
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
-      # Hack for Rust 1.79 - clippy is just not there?
-      - run: rustup component add clippy
       - run: cargo lint
 
   typos:
