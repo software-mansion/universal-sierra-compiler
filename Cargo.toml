@@ -15,9 +15,9 @@ cairo-lang-starknet-sierra-1_0_0 = { package = "universal-sierra-compiler-cairo-
 cairo-lang-sierra-to-casm = "2.10.0-rc.1"
 cairo-lang-sierra = "2.10.0-rc.1"
 cairo-lang-starknet-classes = "2.10.0-rc.1"
-serde_json = "1.0.135"
+serde_json = "1.0.137"
 serde = "1.0.217"
-clap = "4.5.26"
+clap = "4.5.27"
 anyhow = "1.0.95"
 console = "0.15.10"
 
