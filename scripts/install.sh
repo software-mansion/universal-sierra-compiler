@@ -122,7 +122,7 @@ add_binary_to_path() {
 
   # Only add universal-sierra-compiler if it isn't already in PATH.
   case ":$PATH:" in
-      *":${LOCAL_BIN}/${BINARY_NAME}:"*)
+      *":${LOCAL_BIN}:"*)
           # The path is already in PATH, do nothing
           ;;
       *)
