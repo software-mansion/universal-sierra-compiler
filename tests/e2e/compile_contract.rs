@@ -66,6 +66,7 @@ fn wrong_json() {
     "});
 }
 
+#[test_case("1_7_0_trace_hint"; "sierra 1.7.0 with trace hint")]
 #[test_case("1_7_0"; "sierra 1.7.0")]
 #[test_case("1_6_0"; "sierra 1.6.0")]
 #[test_case("1_5_0"; "sierra 1.5.0")]
