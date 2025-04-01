@@ -73,7 +73,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - uses: Swatinem/rust-cache@f0deed1e0edfc6a9be95417288c0e1099b1eeec3
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6
 
       - name: Install cross
         if: matrix.cross
@@ -122,7 +122,7 @@ jobs:
 
       - name: Create GitHub release
         id: create-release
-        uses: taiki-e/create-gh-release-action@b7abb0cf5e72cb5500307b577f9ca3fd4c5be9d2 # v1.8.4
+        uses: taiki-e/create-gh-release-action@26b80501670402f1999aff4b934e1574ef2d3705 # v1.9.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           changelog: CHANGELOG.md
