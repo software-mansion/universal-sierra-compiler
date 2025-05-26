@@ -51,7 +51,7 @@ fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result
         None => {
             println!("{}", serde_json::to_string(&output_json)?);
         }
-    };
+    }
 
     Ok(())
 }
