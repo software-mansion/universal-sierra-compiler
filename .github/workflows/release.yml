@@ -18,7 +18,7 @@ jobs:
 
       - name: Get version from Cargo.toml
         id: lookupVersion
-        uses: mikefarah/yq@f03c9dc599c37bfcaf533427211d05e51e6fee64
+        uses: mikefarah/yq@6251e95af8df3505def48c71f3119836701495d6
         with:
           cmd: yq -oy '"v" + .package.version' 'Cargo.toml'
 
@@ -73,7 +73,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1
 
       - name: Install cross
         if: matrix.cross
