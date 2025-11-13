@@ -1,4 +1,5 @@
 use anyhow::{Context, Error, Result};
+use cairo_lang_sierra::program::Program;
 use clap::{Parser, Subcommand};
 use console::style;
 use serde_json::{to_writer, Value};
@@ -33,10 +34,9 @@ fn print_error_message(error: &Error) {
 }
 
 #[tracing::instrument(skip_all, level = "info")]
-fn read_json(file_path: PathBuf) -> Result<Value> {
+fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -> Result<T> {
     let sierra_file = File::open(file_path).context("Unable to open json file")?;
     let sierra_file_reader = BufReader::new(sierra_file);
-
     serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
 }
 
@@ -71,9 +71,11 @@ fn main_execution() -> Result<bool> {
             output_casm(&casm_json, compile_contract.output_path)?;
         }
         Commands::CompileRaw(compile_raw) => {
-            let sierra_json = read_json(compile_raw.sierra_path)?;
+            let sierra_json: Program = read_json(compile_raw.sierra_path).context(
+                "Unable to deserialize Sierra program. Make sure it is in a correct format",
+            )?;
 
-            let cairo_program_json = commands::compile_raw::compile(sierra_json)?;
+            let cairo_program_json = commands::compile_raw::compile(&sierra_json)?;
 
             output_casm(&cairo_program_json, compile_raw.output_path)?;
         }
