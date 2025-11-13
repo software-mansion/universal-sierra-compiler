@@ -23,6 +23,7 @@ pub struct CompileContract {
 }
 
 /// Compiles Sierra of the Starknet contract.
+#[tracing::instrument(skip_all, level = "info")]
 pub fn compile(mut sierra_json: Value) -> Result<Value> {
     sierra_json["abi"] = Value::Null;
     sierra_json["sierra_program_debug_info"] = Value::Null;
