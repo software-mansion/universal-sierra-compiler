@@ -3135,6 +3135,7 @@ dependencies = [
  "fs_extra",
  "indoc 2.0.6",
  "num-bigint",
+ "serde_core",
  "serde_json",
  "snapbox",
  "tempfile",

@@ -1,16 +1,8 @@
+use cairo_lang_sierra::program::Program;
 use std::fs::File;
 use test_case::test_case;
 use universal_sierra_compiler::compile_raw;
 
-#[test]
-fn wrong_json() {
-    let sierra_json = serde_json::json!({
-        "wrong": "data"
-    });
-
-    let cairo_program = compile_raw(sierra_json);
-    assert!(cairo_program.is_err());
-}
 #[test_case("1_7_0_trace_hint"; "sierra 1.7.0 with trace hint")]
 #[test_case("1_7_0"; "sierra 1.7.0")]
 #[test_case("1_6_0"; "sierra 1.6.0")]
@@ -19,8 +11,8 @@ fn wrong_json() {
 fn compile_raw_sierra(sierra_version: &str) {
     let file =
         File::open("tests/data/sierra_raw/sierra_".to_string() + sierra_version + ".json").unwrap();
-    let artifact = serde_json::from_reader(file).unwrap();
-    let compiled = compile_raw(artifact);
+    let artifact: Program = serde_json::from_reader(file).unwrap();
+    let compiled = compile_raw(&artifact);
 
     assert!(compiled.is_ok());
 }
