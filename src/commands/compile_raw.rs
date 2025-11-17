@@ -5,6 +5,7 @@ use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConf
 use clap::Args;
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use tracing::trace_span;
 
 #[derive(Args)]
 pub struct CompileRaw {
@@ -20,29 +21,51 @@ pub struct CompileRaw {
 }
 
 /// Compiles Sierra of the plain Cairo code.
+#[tracing::instrument(skip_all, level = "info")]
 pub fn compile(sierra_program: Value) -> Result<Value> {
-    let sierra_program: Program = serde_json::from_value(sierra_program)
-        .context("Unable to deserialize Sierra program. Make sure it is in a correct format")?;
+    let span = trace_span!("deserialize_sierra");
+    let sierra_program: Program = {
+        let _g = span.enter();
+        serde_json::from_value(sierra_program)
+            .context("Unable to deserialize Sierra program. Make sure it is in a correct format")?
+    };
+
     let metadata_config = MetadataComputationConfig::default();
-    let metadata = calc_metadata(&sierra_program, metadata_config)?;
+    let span = trace_span!("calc_metadata");
+    let metadata = {
+        let _g = span.enter();
+        calc_metadata(&sierra_program, metadata_config)?
+    };
 
-    let cairo_program = cairo_lang_sierra_to_casm::compiler::compile(
-        &sierra_program,
-        &metadata,
-        SierraToCasmConfig {
-            gas_usage_check: true,
-            max_bytecode_size: usize::MAX,
-        },
-    )?;
-    let assembled_cairo_program = cairo_program.assemble();
+    let span = trace_span!("compile_sierra_to_casm");
+    let cairo_program = {
+        let _g = span.enter();
+        cairo_lang_sierra_to_casm::compiler::compile(
+            &sierra_program,
+            &metadata,
+            SierraToCasmConfig {
+                gas_usage_check: true,
+                max_bytecode_size: usize::MAX,
+            },
+        )?
+    };
+    let span = trace_span!("assemble_cairo_program");
+    let assembled_cairo_program = {
+        let _g = span.enter();
+        cairo_program.assemble()
+    };
 
-    Ok(json!({
-        "assembled_cairo_program": {
-            "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
-            "hints": serde_json::to_value(assembled_cairo_program.hints)?
-        },
-        "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?
-    }))
+    let span = trace_span!("serialize_result");
+    Ok({
+        let _g = span.enter();
+        json!({
+            "assembled_cairo_program": {
+                "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
+                "hints": serde_json::to_value(assembled_cairo_program.hints)?
+            },
+            "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?
+        })
+    })
 }
 
 fn serialize_cairo_program_debug_info(debug_info: &CairoProgramDebugInfo) -> Vec<(usize, usize)> {
