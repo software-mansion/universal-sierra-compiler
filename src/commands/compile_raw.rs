@@ -27,7 +27,7 @@ pub fn compile(sierra_program: &Program) -> Result<Value> {
     let metadata_config = MetadataComputationConfig::default();
     let span = trace_span!("calc_metadata");
     let program_info =
-        ProgramRegistryInfo::new(&sierra_program).with_context(|| "Failed building registry.")?;
+        ProgramRegistryInfo::new(sierra_program).with_context(|| "Failed building registry.")?;
     let metadata = {
         let _g = span.enter();
         calc_metadata(sierra_program, &program_info, metadata_config)?
