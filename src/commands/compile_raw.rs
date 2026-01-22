@@ -1,7 +1,8 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra_to_casm::compiler::{CairoProgramDebugInfo, SierraToCasmConfig};
 use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
+use cairo_lang_sierra_type_size::ProgramRegistryInfo;
 use clap::Args;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -25,9 +26,11 @@ pub struct CompileRaw {
 pub fn compile(sierra_program: &Program) -> Result<Value> {
     let metadata_config = MetadataComputationConfig::default();
     let span = trace_span!("calc_metadata");
+    let program_info =
+        ProgramRegistryInfo::new(sierra_program).with_context(|| "Failed building registry.")?;
     let metadata = {
         let _g = span.enter();
-        calc_metadata(sierra_program, metadata_config)?
+        calc_metadata(sierra_program, &program_info, metadata_config)?
     };
 
     let span = trace_span!("compile_sierra_to_casm");
@@ -35,6 +38,7 @@ pub fn compile(sierra_program: &Program) -> Result<Value> {
         let _g = span.enter();
         cairo_lang_sierra_to_casm::compiler::compile(
             sierra_program,
+            &program_info,
             &metadata,
             SierraToCasmConfig {
                 gas_usage_check: true,
