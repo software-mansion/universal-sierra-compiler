@@ -3,6 +3,7 @@ use std::fs::File;
 use test_case::test_case;
 use universal_sierra_compiler::compile_raw;
 
+#[test_case("1_8_0"; "sierra 1.8.0")]
 #[test_case("1_7_0_trace_hint"; "sierra 1.7.0 with trace hint")]
 #[test_case("1_7_0"; "sierra 1.7.0")]
 #[test_case("1_6_0"; "sierra 1.6.0")]
