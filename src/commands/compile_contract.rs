@@ -39,10 +39,15 @@ pub fn compile(mut sierra_json: Value) -> Result<Value> {
 
     let sierra_version = parse_sierra_version(&sierra_json)?;
     match sierra_version.as_slice() {
-        [1, 2..=7, ..] => {
+        [1, 2..=8, ..] => {
             let sierra_class: ContractClass = serde_json::from_value(sierra_json.clone()).unwrap();
+            let populate_debug_info = true;
+            let extracted = sierra_class
+                .extract_sierra_program(populate_debug_info)
+                .unwrap();
             let casm_class =
-                CasmContractClass::from_contract_class(sierra_class, true, usize::MAX).unwrap();
+                CasmContractClass::from_contract_class(sierra_class, extracted, true, usize::MAX)
+                    .unwrap();
             Ok(serde_json::to_value(casm_class)?)
         }
         [1, 0..=1, 0] => compile_contract!(ContractClassSierraV1, CasmContractClassSierraV1),
