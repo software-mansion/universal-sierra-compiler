@@ -136,3 +136,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.create-release.outputs.computed-prefix }}${{ steps.create-release.outputs.version }}
+
+  publish-crates:
+    name: Publish to Crates.io
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Login to Crates.io
+        run: cargo login ${{ secrets.CRATES_IO_API_TOKEN }}
+
+      - name: Publish on crates.io
+        shell: bash
+        run: |
+          cargo publish
+          # Sleep to handle eventual consistency on crates.io
+          echo "Sleeping 20s to allow crates.io index propagation..."
+          sleep 20
