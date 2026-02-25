@@ -69,8 +69,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
         with:
+          toolchain: stable
           target: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0
@@ -143,8 +144,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
