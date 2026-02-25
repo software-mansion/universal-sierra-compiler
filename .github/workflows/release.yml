@@ -154,8 +154,4 @@ jobs:
 
       - name: Publish on crates.io
         shell: bash
-        run: |
-          cargo publish
-          # Sleep to handle eventual consistency on crates.io
-          echo "Sleeping 20s to allow crates.io index propagation..."
-          sleep 20
+        run: cargo publish
