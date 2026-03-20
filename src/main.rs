@@ -2,6 +2,7 @@ use anyhow::{Context, Error, Result};
 use cairo_lang_sierra::program::Program;
 use clap::{Parser, Subcommand};
 use console::style;
+use mimalloc::MiMalloc;
 use serde_json::{to_writer, Value};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
@@ -11,6 +12,9 @@ mod commands;
 
 use commands::compile_contract::CompileContract;
 use commands::compile_raw::CompileRaw;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 #[derive(Parser)]
 #[command(version)]
