@@ -5,6 +5,7 @@ Universal-Sierra-Compiler is the tool/crate for Sierra compilation. It compiles 
 
 | Supported Sierra Versions |
 |---------------------------|
+| 1.9.0                     |
 | 1.8.0                     |
 | 1.7.0                     |
 | 1.6.0                     |
