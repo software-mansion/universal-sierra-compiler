@@ -12,6 +12,7 @@ fn wrong_json() {
     assert!(casm_class.is_err());
 }
 
+#[test_case("1_9_0"; "sierra 1.9.0")]
 #[test_case("1_8_0"; "sierra 1.8.0")]
 #[test_case("1_7_0_trace_hint"; "sierra 1.7.0 with trace hint")]
 #[test_case("1_7_0"; "sierra 1.7.0")]
