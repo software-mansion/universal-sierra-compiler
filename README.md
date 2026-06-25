@@ -26,7 +26,7 @@ curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-comp
 ```
 Alternatively, to use USC as a Rust dependency, just put it in your `Cargo.toml` like so:
 ```
-universal-sierra-compiler = "2.8.0"
+universal-sierra-compiler = "2.9.0"
 ```
 
 You almost always want to install the latest stable version. 
