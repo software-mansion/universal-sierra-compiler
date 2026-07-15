@@ -5,6 +5,8 @@ Universal-Sierra-Compiler is the tool/crate for Sierra compilation. It compiles 
 
 | Supported Sierra Versions |
 |---------------------------|
+| 1.9.2                     |
+| 1.9.1                     |
 | 1.9.0                     |
 | 1.8.0                     |
 | 1.7.0                     |
@@ -26,7 +28,7 @@ curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-comp
 ```
 Alternatively, to use USC as a Rust dependency, just put it in your `Cargo.toml` like so:
 ```
-universal-sierra-compiler = "2.9.0"
+universal-sierra-compiler = "2.9.1"
 ```
 
 You almost always want to install the latest stable version. 
