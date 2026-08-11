@@ -1,5 +1,4 @@
-//! On-disk layout of the CASM cache: where each entry lives (`CasmCacheSlot` / `cache_entry_path`)
-//! and how we decide whether a cached entry is still valid (`CasmCompilationFingerprint`).
+//! Paths and keys used by the CASM cache.
 
 use anyhow::{Context, Result};
 use scarb_stable_hash::StableHasher;
@@ -71,7 +70,6 @@ pub struct CasmCompilationFingerprint {
 }
 
 impl CasmCompilationFingerprint {
-    /// Builds a fingerprint from an in-memory input (test-only).
     #[cfg(test)]
     pub fn new(sierra_kind: SierraKind, sierra_input: &impl Serialize) -> Result<Self> {
         let bytes = serde_json::to_vec(sierra_input)

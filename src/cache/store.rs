@@ -1,10 +1,7 @@
 //! Reading and writing cache entries on disk.
 //!
-//! Each entry is two files in the same directory: `casm.json` (the compiled output) and
-//! `fingerprint` (the digest of the input it was built from). Both are written atomically, and
-//! `casm.json` is always written first. So an entry counts as valid only when its `fingerprint` is
-//! present, matches, and its `casm.json` can be read - writing the fingerprint last is what marks
-//! the entry as complete.
+//! Each entry has `casm.json` with compiled output and `fingerprint` with the input digest.
+//! The CASM file is written first, then the fingerprint marks the entry as complete.
 
 use super::layout::CasmCompilationFingerprint;
 use super::CasmCompilationOutput;

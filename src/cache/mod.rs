@@ -1,9 +1,7 @@
 //! Optional persistent cache for CASM compiled from Sierra.
 //!
-//! It uses two things: a *slot* (`CasmCacheSlot`) picks which file a Sierra artifact maps to, and a
-//! *fingerprint* (`CasmCompilationFingerprint`) tells whether that file still matches the current
-//! input. `compile_with_cache` uses both: it reuses a cached file when they match, otherwise it
-//! compiles and saves the result.
+//! A slot picks the cache file for a Sierra artifact path. A fingerprint tells whether that file
+//! still matches the current input.
 
 use anyhow::Result;
 use serde_json::Value;
