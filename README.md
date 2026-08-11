@@ -53,6 +53,20 @@ Tool consist of two subcommands:
 
 The first one compiles Sierra of the Starknet contract, while the second one compiles Sierra of the plain Cairo code.
 
+### CASM cache
+
+Both subcommands accept an optional `--cache-dir` argument. When it is passed, USC stores compiled
+CASM in that directory and reuses it on later runs if the Sierra input did not change.
+
+```shell
+$ universal-sierra-compiler \
+    compile-contract \
+      --sierra-path ./path/to/sierra.json \
+      --cache-dir ./path/to/cache
+```
+
+The cache is best-effort. If it cannot be read or written, USC falls back to normal compilation.
+
 ### `compile-contract` subcommand
 
 The input of this subcommand is a path to a file with Sierra of the contract
