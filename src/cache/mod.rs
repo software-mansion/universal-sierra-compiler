@@ -5,7 +5,6 @@
 
 use anyhow::Result;
 use serde_json::Value;
-use std::fs::File;
 use std::path::Path;
 
 mod layout;
@@ -15,17 +14,6 @@ pub use layout::SierraKind;
 
 use layout::{cache_entry_path, CasmCacheSlot, CasmCompilationFingerprint};
 use store::{read_cache_entry, write_cache_entry};
-
-/// The result of a (possibly cached) CASM compilation, ready to be emitted.
-#[derive(Debug)]
-pub enum CasmCompilationOutput {
-    /// An open handle to a cache file that matched the current input. We keep it open so we can
-    /// read it once, without reopening it later (which could race with another process).
-    CachedFile(File),
-    /// Freshly compiled CASM held in memory - used when the cache is disabled, on a cache miss, or
-    /// when writing the entry failed.
-    Json(Value),
-}
 
 /// Returns the CASM for `sierra_path`, serving it from `cache_dir` when a valid entry exists.
 ///
@@ -37,9 +25,9 @@ pub fn compile_with_cache(
     sierra_path: &Path,
     sierra_kind: SierraKind,
     compile: impl FnOnce() -> Result<Value>,
-) -> Result<CasmCompilationOutput> {
+) -> Result<Value> {
     let Some(cache_dir) = cache_dir else {
-        return compile().map(CasmCompilationOutput::Json);
+        return compile();
     };
 
     let fingerprint = CasmCompilationFingerprint::from_file(sierra_path)?;
@@ -59,7 +47,7 @@ pub fn compile_with_cache(
         );
     }
 
-    Ok(CasmCompilationOutput::Json(output))
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -72,13 +60,6 @@ mod tests {
     use serde_json::json;
     use std::fs;
     use std::path::{Path, PathBuf};
-
-    fn output_json(output: CasmCompilationOutput) -> Value {
-        match output {
-            CasmCompilationOutput::Json(value) => value,
-            CasmCompilationOutput::CachedFile(file) => serde_json::from_reader(file).unwrap(),
-        }
-    }
 
     fn write_source(cache_root: &Path, file_name: &str, input: &Value) -> PathBuf {
         let path = cache_root.join(file_name);
@@ -109,8 +90,8 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(output_json(first), json!({"compiled": 1}));
-        assert_eq!(output_json(second), json!({"compiled": 1}));
+        assert_eq!(first, json!({"compiled": 1}));
+        assert_eq!(second, json!({"compiled": 1}));
     }
 
     #[test]
@@ -149,7 +130,7 @@ mod tests {
                 Ok(json!({"compiled": "first"}))
             })
             .unwrap();
-        let first_output_json = output_json(first_output);
+        let first_output_json = first_output;
 
         fs::write(&source_path, serde_json::to_vec(&second_input).unwrap()).unwrap();
         let second = fingerprint_from_file(&source_path);
@@ -158,14 +139,14 @@ mod tests {
                 Ok(json!({"compiled": "second"}))
             })
             .unwrap();
-        let second_output_json = output_json(second_output);
+        let second_output_json = second_output;
 
         assert_eq!(first_output_json, json!({"compiled": "first"}));
         assert_eq!(second_output_json, json!({"compiled": "second"}));
         assert_eq!(cache_entry_path(temp.path(), &slot), path);
         assert!(read_cache_entry(&path, &first).is_none());
         assert_eq!(
-            output_json(read_cache_entry(&path, &second).unwrap()),
+            read_cache_entry(&path, &second).unwrap(),
             second_output_json
         );
     }
@@ -191,8 +172,8 @@ mod tests {
         .unwrap();
         let cached = read_cache_entry(&path, &fingerprint).unwrap();
 
-        assert_eq!(output_json(output), json!({"compiled": 2}));
-        assert_eq!(output_json(cached), json!({"compiled": 2}));
+        assert_eq!(output, json!({"compiled": 2}));
+        assert_eq!(cached, json!({"compiled": 2}));
     }
 
     #[test]
@@ -220,11 +201,11 @@ mod tests {
         })
         .unwrap();
 
-        let compiled_output_json = output_json(output);
+        let compiled_output_json = output;
 
         assert_eq!(compiled_output_json, json!({"compiled": "fresh"}));
         assert_eq!(
-            output_json(read_cache_entry(&path, &fingerprint).unwrap()),
+            read_cache_entry(&path, &fingerprint).unwrap(),
             compiled_output_json
         );
     }
@@ -238,7 +219,7 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(output_json(output), json!({"compiled": 3}));
+        assert_eq!(output, json!({"compiled": 3}));
     }
 
     #[test]
@@ -261,6 +242,34 @@ mod tests {
     }
 
     #[test]
+    fn malformed_cache_entry_is_recompiled_and_replaced() {
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = write_source(
+            temp.path(),
+            "program.sierra.json",
+            &json!({"program": "same"}),
+        );
+        let fingerprint = fingerprint_from_file(&source_path);
+        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
+        let path = cache_entry_path(temp.path(), &slot);
+
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, "{not-json").unwrap();
+        write_text_file_atomically(&fingerprint_path(&path), fingerprint.digest()).unwrap();
+
+        let output = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
+            Ok(json!({"compiled": "fresh"}))
+        })
+        .unwrap();
+
+        assert_eq!(output, json!({"compiled": "fresh"}));
+        assert_eq!(
+            read_cache_entry(&path, &fingerprint).unwrap(),
+            json!({"compiled": "fresh"})
+        );
+    }
+
+    #[test]
     fn compiles_and_returns_output_when_cache_write_fails() {
         let temp = tempfile::tempdir().unwrap();
         let source_path = write_source(
@@ -278,6 +287,6 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(output_json(output), json!({"compiled": 4}));
+        assert_eq!(output, json!({"compiled": 4}));
     }
 }

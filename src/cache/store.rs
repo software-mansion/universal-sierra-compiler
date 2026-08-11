@@ -4,10 +4,9 @@
 //! The CASM file is written first, then the fingerprint marks the entry as complete.
 
 use super::layout::CasmCompilationFingerprint;
-use super::CasmCompilationOutput;
 use serde_json::Value;
 use std::fs;
-use std::io::{self, BufWriter, Write as _};
+use std::io::{self, BufReader, BufWriter, Write as _};
 use std::path::{Path, PathBuf};
 use tempfile::Builder;
 
@@ -20,23 +19,35 @@ pub(super) fn fingerprint_path(output_path: &Path) -> PathBuf {
 }
 
 /// Returns the cached entry at `path` if its stored fingerprint matches `fingerprint` and the
-/// `casm.json` is readable; otherwise `None` (a miss).
+/// `casm.json` contains valid JSON; otherwise `None` (a miss).
 pub(super) fn read_cache_entry(
     path: &Path,
     fingerprint: &CasmCompilationFingerprint,
-) -> Option<CasmCompilationOutput> {
+) -> Option<Value> {
     if !cache_fingerprint_matches(&fingerprint_path(path), fingerprint) {
         return None;
     }
 
-    match fs::File::open(path) {
-        Ok(file) => Some(CasmCompilationOutput::CachedFile(file)),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+    let file = match fs::File::open(path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return None,
         Err(error) => {
             tracing::debug!(
                 path = %path.display(),
                 %error,
                 "failed to open CASM cache entry"
+            );
+            return None;
+        }
+    };
+
+    match serde_json::from_reader(BufReader::new(file)) {
+        Ok(output) => Some(output),
+        Err(error) => {
+            tracing::debug!(
+                path = %path.display(),
+                %error,
+                "invalid CASM cache entry"
             );
             None
         }

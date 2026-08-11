@@ -133,6 +133,42 @@ fn cache_hit_is_served_from_cache() {
 }
 
 #[test]
+fn malformed_cache_entry_is_recompiled() {
+    let sierra_file_name = "sierra_1_4_0.json";
+    let cache_dir_name = "cache";
+    let temp_dir = temp_dir_with_sierra_file("sierra_raw", sierra_file_name);
+
+    let run = |output: &str, cache: bool| {
+        let mut args = vec![
+            "compile-raw",
+            "--sierra-path",
+            sierra_file_name,
+            "--output-path",
+            output,
+        ];
+        if cache {
+            args.extend(["--cache-dir", cache_dir_name]);
+        }
+        runner(args, &temp_dir).assert().success();
+        fs::read(temp_dir.path().join(output)).unwrap()
+    };
+
+    run("first.json", true);
+    fs::write(
+        cached_casm_file(&temp_dir.path().join(cache_dir_name)),
+        "{not-json",
+    )
+    .unwrap();
+
+    let recovered = run("recovered.json", true);
+    let uncached = run("uncached.json", false);
+
+    assert_eq!(recovered, uncached);
+    verify_output_file(temp_dir.path().join("recovered.json"));
+    verify_output_file(cached_casm_file(&temp_dir.path().join(cache_dir_name)));
+}
+
+#[test]
 fn cache_output_matches_uncached() {
     let sierra_file_name = "sierra_1_4_0.json";
     let cache_dir_name = "cache";

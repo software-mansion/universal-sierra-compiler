@@ -3,6 +3,7 @@ use cairo_lang_sierra::program::Program;
 use clap::{Parser, Subcommand};
 use console::style;
 use mimalloc::MiMalloc;
+use serde_json::Value;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ use std::path::PathBuf;
 mod cache;
 mod commands;
 
-use cache::{CasmCompilationOutput, SierraKind};
+use cache::SierraKind;
 use commands::compile_contract::CompileContract;
 use commands::compile_raw::CompileRaw;
 
@@ -47,30 +48,16 @@ fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -
 
 /// Writes the CASM to `output_file_path`, or to stdout when it is `None`.
 #[tracing::instrument(skip_all, level = "info")]
-fn output_casm(output: CasmCompilationOutput, output_file_path: Option<PathBuf>) -> Result<()> {
+fn output_casm(output: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
     if let Some(output_path) = output_file_path {
         let file = File::create(output_path).context("Unable to open/create casm json file")?;
         let mut writer = BufWriter::new(file);
-        write_casm(output, &mut writer).context("Unable to save casm json file")?;
+        serde_json::to_writer(&mut writer, output).context("Unable to save casm json file")?;
         writer.flush().context("Unable to save casm json file")?;
     } else {
         let mut stdout = io::stdout().lock();
-        write_casm(output, &mut stdout).context("Unable to write casm json")?;
+        serde_json::to_writer(&mut stdout, output).context("Unable to write casm json")?;
         writeln!(stdout).context("Unable to write casm json")?;
-    }
-
-    Ok(())
-}
-
-/// Writes the CASM payload to `writer` as compact JSON.
-fn write_casm(output: CasmCompilationOutput, writer: &mut dyn Write) -> io::Result<()> {
-    match output {
-        CasmCompilationOutput::CachedFile(mut file) => {
-            io::copy(&mut file, writer)?;
-        }
-        CasmCompilationOutput::Json(value) => {
-            serde_json::to_writer(writer, &value).map_err(io::Error::other)?;
-        }
     }
 
     Ok(())
@@ -93,7 +80,7 @@ fn main_execution() -> Result<bool> {
                 },
             )?;
 
-            output_casm(casm_json, compile_contract.output_path)?;
+            output_casm(&casm_json, compile_contract.output_path)?;
         }
         Commands::CompileRaw(compile_raw) => {
             let sierra_path = compile_raw.sierra_path;
@@ -109,7 +96,7 @@ fn main_execution() -> Result<bool> {
                 },
             )?;
 
-            output_casm(cairo_program_json, compile_raw.output_path)?;
+            output_casm(&cairo_program_json, compile_raw.output_path)?;
         }
     }
 
