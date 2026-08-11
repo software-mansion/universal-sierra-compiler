@@ -109,21 +109,24 @@ fn cache_hit_is_served_from_cache() {
     // First run populates the cache.
     run(Some("first.json"));
 
-    // Replace the cached payload with a sentinel. Any later run that recompiled instead of reading
-    // the cache would overwrite it, so the assertions below double as proof of a cache hit.
-    let sentinel = r#"{"sentinel":"served-from-cache"}"#;
-    fs::write(cached_casm_file(&cache_dir), sentinel).unwrap();
+    // Replace the cached payload. Any later run that recompiled instead of reading the cache would
+    // overwrite it, so the assertions below double as proof of a cache hit.
+    let cached_payload = r#"{"cached":"served-from-cache"}"#;
+    fs::write(cached_casm_file(&cache_dir), cached_payload).unwrap();
 
-    // A cache hit written to a file returns the sentinel verbatim.
+    // A cache hit written to a file returns the cached payload verbatim.
     run(Some("second.json"));
     assert_eq!(
         fs::read_to_string(temp_dir.path().join("second.json")).unwrap(),
-        sentinel
+        cached_payload
     );
 
     // A cache hit written to stdout (no --output-path) does too.
     let stdout = run(None);
-    assert_eq!(String::from_utf8(stdout).unwrap().trim_end(), sentinel);
+    assert_eq!(
+        String::from_utf8(stdout).unwrap().trim_end(),
+        cached_payload
+    );
 }
 
 #[test]

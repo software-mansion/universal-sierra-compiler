@@ -94,18 +94,18 @@ fn second_run_is_served_from_cache() {
         .assert()
         .success();
 
-    // Replace the cached payload with a sentinel. A recompile on the second run would overwrite it.
-    let sentinel = r#"{"sentinel":"served-from-cache"}"#;
-    fs::write(cached_casm_file(&cache_dir), sentinel).unwrap();
+    // Replace the cached payload. A recompile on the second run would overwrite it.
+    let cached_payload = r#"{"cached":"served-from-cache"}"#;
+    fs::write(cached_casm_file(&cache_dir), cached_payload).unwrap();
 
-    // Second run - unchanged Sierra input, so the fingerprint matches and the sentinel is returned.
+    // Second run - unchanged Sierra input, so the fingerprint matches and cached payload is returned.
     let second_args = args("second.json");
     runner(second_args.iter().map(String::as_str).collect(), &temp_dir)
         .assert()
         .success();
 
     let served = fs::read_to_string(temp_dir.path().join("second.json")).unwrap();
-    assert_eq!(served, sentinel);
+    assert_eq!(served, cached_payload);
 }
 
 #[test]
