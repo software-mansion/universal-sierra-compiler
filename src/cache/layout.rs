@@ -134,7 +134,7 @@ pub(super) fn cache_entry_path(cache_dir: &Path, slot: &CasmCacheSlot) -> PathBu
 fn hash_file_content(path: &Path) -> io::Result<String> {
     let mut file = fs::File::open(path)?;
     let mut hasher = StableHasher::new();
-    let mut buffer = [0; 64 * 1024];
+    let mut buffer = vec![0; 64 * 1024].into_boxed_slice();
 
     loop {
         let read = file.read(&mut buffer)?;
@@ -181,7 +181,9 @@ mod tests {
     fn hash_file_content_handles_files_larger_than_read_buffer() {
         let temp = tempfile::tempdir().unwrap();
         // Larger than the 64 KiB read buffer, so hashing spans multiple `read` calls.
-        let big: Vec<u8> = (0..200 * 1024).map(|i| (i % 251) as u8).collect();
+        let big: Vec<u8> = (0..200 * 1024)
+            .map(|i| u8::try_from(i % 251).unwrap())
+            .collect();
         let mut mutated = big.clone();
         *mutated.last_mut().unwrap() ^= 0xff;
 

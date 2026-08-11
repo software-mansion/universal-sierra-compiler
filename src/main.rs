@@ -48,18 +48,15 @@ fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -
 /// Writes the CASM to `output_file_path`, or to stdout when it is `None`.
 #[tracing::instrument(skip_all, level = "info")]
 fn output_casm(output: CasmCompilationOutput, output_file_path: Option<PathBuf>) -> Result<()> {
-    match output_file_path {
-        Some(output_path) => {
-            let file = File::create(output_path).context("Unable to open/create casm json file")?;
-            let mut writer = BufWriter::new(file);
-            write_casm(output, &mut writer).context("Unable to save casm json file")?;
-            writer.flush().context("Unable to save casm json file")?;
-        }
-        None => {
-            let mut stdout = io::stdout().lock();
-            write_casm(output, &mut stdout).context("Unable to write casm json")?;
-            writeln!(stdout).context("Unable to write casm json")?;
-        }
+    if let Some(output_path) = output_file_path {
+        let file = File::create(output_path).context("Unable to open/create casm json file")?;
+        let mut writer = BufWriter::new(file);
+        write_casm(output, &mut writer).context("Unable to save casm json file")?;
+        writer.flush().context("Unable to save casm json file")?;
+    } else {
+        let mut stdout = io::stdout().lock();
+        write_casm(output, &mut stdout).context("Unable to write casm json")?;
+        writeln!(stdout).context("Unable to write casm json")?;
     }
 
     Ok(())
