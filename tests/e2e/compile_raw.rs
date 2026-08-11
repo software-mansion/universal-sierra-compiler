@@ -1,4 +1,7 @@
-use crate::e2e::{assert_cache_files_written, cached_casm_file, runner, temp_dir_with_sierra_file};
+use crate::e2e::{
+    assert_cache_files_written, cached_casm_file, copy_sierra_fixture, runner,
+    temp_dir_with_sierra_file,
+};
 use cairo_lang_casm::hints::Hint;
 use indoc::indoc;
 use num_bigint::BigInt;
@@ -159,6 +162,46 @@ fn cache_output_matches_uncached() {
         "cache miss output must match uncached output"
     );
     assert_eq!(uncached, hit, "cache hit output must match uncached output");
+}
+
+#[test]
+fn changed_sierra_invalidates_cache() {
+    let sierra_file_name = "sierra_1_4_0.json";
+    let cache_dir_name = "cache";
+    let temp_dir = temp_dir_with_sierra_file("sierra_raw", sierra_file_name);
+
+    let run = |output: &str, cache: bool| {
+        let mut args = vec![
+            "compile-raw",
+            "--sierra-path",
+            sierra_file_name,
+            "--output-path",
+            output,
+        ];
+        if cache {
+            args.extend(["--cache-dir", cache_dir_name]);
+        }
+        runner(args, &temp_dir).assert().success();
+        fs::read(temp_dir.path().join(output)).unwrap()
+    };
+
+    let first = run("first.json", true);
+
+    copy_sierra_fixture(
+        "sierra_raw",
+        "sierra_1_5_0.json",
+        &temp_dir.path().join(sierra_file_name),
+    );
+
+    let cached = run("changed-cached.json", true);
+    let uncached = run("changed-uncached.json", false);
+
+    assert_ne!(first, cached, "changed Sierra should produce new CASM");
+    assert_eq!(
+        cached, uncached,
+        "changed Sierra should invalidate the cache"
+    );
+    assert!(cached_casm_file(&temp_dir.path().join(cache_dir_name)).is_file());
 }
 
 #[test]

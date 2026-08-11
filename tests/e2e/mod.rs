@@ -17,16 +17,20 @@ fn runner(args: Vec<&str>, temp_dir: &TempDir) -> Command {
 fn temp_dir_with_sierra_file(dir_name: &str, file_name: &str) -> TempDir {
     let temp_dir = TempDir::new().expect("Unable to create a temporary directory");
 
-    let src_dir = PathBuf::from("tests/data");
+    copy_sierra_fixture(dir_name, file_name, &temp_dir.path().join(file_name));
+
+    temp_dir
+}
+
+fn copy_sierra_fixture(dir_name: &str, file_name: &str, destination: &Path) {
+    let src_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data");
 
     fs_extra::file::copy(
         src_dir.join(dir_name).join(file_name),
-        temp_dir.path().join(file_name),
+        destination,
         &fs_extra::file::CopyOptions::new().overwrite(true),
     )
     .unwrap_or_else(|_| panic!("Unable to copy {dir_name}/{file_name}"));
-
-    temp_dir
 }
 
 #[must_use]

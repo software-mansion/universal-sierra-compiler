@@ -2,8 +2,6 @@
 
 use anyhow::{Context, Result};
 use scarb_stable_hash::StableHasher;
-#[cfg(test)]
-use serde_core::Serialize;
 use std::fs;
 use std::hash::Hasher as _;
 use std::io::{self, Read as _};
@@ -65,23 +63,12 @@ impl CasmCacheSlot {
 /// A cached entry is served only when its stored fingerprint equals the current one.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CasmCompilationFingerprint {
-    sierra_kind: SierraKind,
     digest: String,
 }
 
 impl CasmCompilationFingerprint {
-    #[cfg(test)]
-    pub fn new(sierra_kind: SierraKind, sierra_input: &impl Serialize) -> Result<Self> {
-        let bytes = serde_json::to_vec(sierra_input)
-            .context("Unable to serialize Sierra input for cache fingerprint")?;
-        Ok(Self {
-            sierra_kind,
-            digest: short_hash(&bytes),
-        })
-    }
-
     /// Builds a fingerprint by hashing the raw bytes of the Sierra file at `sierra_path`.
-    pub fn from_file(sierra_kind: SierraKind, sierra_path: &Path) -> Result<Self> {
+    pub fn from_file(sierra_path: &Path) -> Result<Self> {
         // We hash the raw file bytes, not a parsed form. On a cache hit this is the only time we
         // read the file, and we never parse it. On a miss the compile closure reads it again to
         // parse it, but that extra read is tiny next to the cost of compiling.
@@ -91,15 +78,7 @@ impl CasmCompilationFingerprint {
                 sierra_path.display()
             )
         })?;
-        Ok(Self {
-            sierra_kind,
-            digest,
-        })
-    }
-
-    /// The artifact kind this fingerprint was built for.
-    pub(super) fn sierra_kind(&self) -> SierraKind {
-        self.sierra_kind
+        Ok(Self { digest })
     }
 
     /// The digest compared against a stored entry to decide a hit or miss. It is the hash of the
@@ -206,15 +185,14 @@ mod tests {
         let path = write_file(temp.path(), "program.sierra.json", b"{\"program\": 1}");
         let other = write_file(temp.path(), "other.sierra.json", b"{\"program\": 2}");
 
-        let base = CasmCompilationFingerprint::from_file(SierraKind::Raw, &path).unwrap();
+        let base = CasmCompilationFingerprint::from_file(&path).unwrap();
 
         // Same content - identical digest.
-        let same = CasmCompilationFingerprint::from_file(SierraKind::Raw, &path).unwrap();
+        let same = CasmCompilationFingerprint::from_file(&path).unwrap();
         assert_eq!(base.digest(), same.digest());
 
         // Different content - different digest.
-        let changed_content =
-            CasmCompilationFingerprint::from_file(SierraKind::Raw, &other).unwrap();
+        let changed_content = CasmCompilationFingerprint::from_file(&other).unwrap();
         assert_ne!(base.digest(), changed_content.digest());
     }
 
@@ -223,7 +201,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let missing = temp.path().join("does-not-exist.json");
 
-        let error = CasmCompilationFingerprint::from_file(SierraKind::Raw, &missing).unwrap_err();
+        let error = CasmCompilationFingerprint::from_file(&missing).unwrap_err();
 
         assert!(error
             .to_string()

@@ -83,13 +83,10 @@ fn main_execution() -> Result<bool> {
     match cli.command {
         Commands::CompileContract(compile_contract) => {
             let sierra_path = compile_contract.sierra_path;
-            let fingerprint =
-                cache::CasmCompilationFingerprint::from_file(SierraKind::Contract, &sierra_path)?;
-
             let casm_json = cache::compile_with_cache(
                 compile_contract.cache_dir.as_deref(),
                 &sierra_path,
-                &fingerprint,
+                SierraKind::Contract,
                 || {
                     let sierra_json = read_json(sierra_path.clone())?;
                     commands::compile_contract::compile(sierra_json)
@@ -100,13 +97,10 @@ fn main_execution() -> Result<bool> {
         }
         Commands::CompileRaw(compile_raw) => {
             let sierra_path = compile_raw.sierra_path;
-            let fingerprint =
-                cache::CasmCompilationFingerprint::from_file(SierraKind::Raw, &sierra_path)?;
-
             let cairo_program_json = cache::compile_with_cache(
                 compile_raw.cache_dir.as_deref(),
                 &sierra_path,
-                &fingerprint,
+                SierraKind::Raw,
                 || {
                     let sierra_program: Program = read_json(sierra_path.clone()).context(
                         "Unable to deserialize Sierra program. Make sure it is in a correct format",
