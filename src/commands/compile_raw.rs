@@ -19,6 +19,10 @@ pub struct CompileRaw {
     /// It will consist of `assembled_cairo_program` and `debug_info` fields
     #[arg(short, long)]
     pub output_path: Option<PathBuf>,
+
+    /// Directory where compiled CASM entries should be cached.
+    #[arg(long)]
+    pub cache_dir: Option<PathBuf>,
 }
 
 /// Compiles Sierra of the plain Cairo code.

@@ -3,13 +3,14 @@ use cairo_lang_sierra::program::Program;
 use clap::{Parser, Subcommand};
 use console::style;
 use mimalloc::MiMalloc;
-use serde_json::{to_writer, Value};
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
+mod cache;
 mod commands;
 
+use cache::{CasmCompilationOutput, SierraKind};
 use commands::compile_contract::CompileContract;
 use commands::compile_raw::CompileRaw;
 
@@ -44,18 +45,34 @@ fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -
     serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
 }
 
+/// Writes the CASM to `output_file_path`, or to stdout when it is `None`.
 #[tracing::instrument(skip_all, level = "info")]
-fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
+fn output_casm(output: CasmCompilationOutput, output_file_path: Option<PathBuf>) -> Result<()> {
     match output_file_path {
         Some(output_path) => {
-            let casm_file =
-                File::create(output_path).context("Unable to open/create casm json file")?;
-            let casm_file_writer = BufWriter::new(casm_file);
-
-            to_writer(casm_file_writer, &output_json).context("Unable to save casm json file")?;
+            let file = File::create(output_path).context("Unable to open/create casm json file")?;
+            let mut writer = BufWriter::new(file);
+            write_casm(output, &mut writer).context("Unable to save casm json file")?;
+            writer.flush().context("Unable to save casm json file")?;
         }
         None => {
-            println!("{}", serde_json::to_string(&output_json)?);
+            let mut stdout = io::stdout().lock();
+            write_casm(output, &mut stdout).context("Unable to write casm json")?;
+            writeln!(stdout).context("Unable to write casm json")?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Writes the CASM payload to `writer` as compact JSON.
+fn write_casm(output: CasmCompilationOutput, writer: &mut dyn Write) -> io::Result<()> {
+    match output {
+        CasmCompilationOutput::CachedFile(mut file) => {
+            io::copy(&mut file, writer)?;
+        }
+        CasmCompilationOutput::Json(value) => {
+            serde_json::to_writer(writer, &value).map_err(io::Error::other)?;
         }
     }
 
@@ -68,20 +85,40 @@ fn main_execution() -> Result<bool> {
 
     match cli.command {
         Commands::CompileContract(compile_contract) => {
-            let sierra_json = read_json(compile_contract.sierra_path)?;
+            let sierra_path = compile_contract.sierra_path;
+            let fingerprint =
+                cache::CasmCompilationFingerprint::from_file(SierraKind::Contract, &sierra_path)?;
 
-            let casm_json = commands::compile_contract::compile(sierra_json)?;
-
-            output_casm(&casm_json, compile_contract.output_path)?;
-        }
-        Commands::CompileRaw(compile_raw) => {
-            let sierra_json: Program = read_json(compile_raw.sierra_path).context(
-                "Unable to deserialize Sierra program. Make sure it is in a correct format",
+            let casm_json = cache::compile_with_cache(
+                compile_contract.cache_dir.as_deref(),
+                &sierra_path,
+                &fingerprint,
+                || {
+                    let sierra_json = read_json(sierra_path.clone())?;
+                    commands::compile_contract::compile(sierra_json)
+                },
             )?;
 
-            let cairo_program_json = commands::compile_raw::compile(&sierra_json)?;
+            output_casm(casm_json, compile_contract.output_path)?;
+        }
+        Commands::CompileRaw(compile_raw) => {
+            let sierra_path = compile_raw.sierra_path;
+            let fingerprint =
+                cache::CasmCompilationFingerprint::from_file(SierraKind::Raw, &sierra_path)?;
 
-            output_casm(&cairo_program_json, compile_raw.output_path)?;
+            let cairo_program_json = cache::compile_with_cache(
+                compile_raw.cache_dir.as_deref(),
+                &sierra_path,
+                &fingerprint,
+                || {
+                    let sierra_program: Program = read_json(sierra_path.clone()).context(
+                        "Unable to deserialize Sierra program. Make sure it is in a correct format",
+                    )?;
+                    commands::compile_raw::compile(&sierra_program)
+                },
+            )?;
+
+            output_casm(cairo_program_json, compile_raw.output_path)?;
         }
     }
 

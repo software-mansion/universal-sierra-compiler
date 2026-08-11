@@ -20,6 +20,10 @@ pub struct CompileContract {
     /// It will be serialized [`cairo_lang_starknet::casm_contract_class::CasmContractClass`]
     #[arg(short, long)]
     pub output_path: Option<PathBuf>,
+
+    /// Directory where compiled CASM entries should be cached.
+    #[arg(long)]
+    pub cache_dir: Option<PathBuf>,
 }
 
 /// Compiles Sierra of the Starknet contract.
