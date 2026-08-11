@@ -41,27 +41,37 @@ fn cache_files(path: &Path) -> Vec<PathBuf> {
     files
 }
 
-fn assert_cache_files_written(path: &Path) {
-    let files = cache_files(path);
+fn assert_cache_layout(cache_dir: &Path, sierra_kind: &str) {
+    let files = cache_files(cache_dir);
+    assert_eq!(
+        files.len(),
+        2,
+        "expected exactly casm.json and fingerprint under {}, found {files:?}",
+        cache_dir.display()
+    );
 
-    assert!(
-        !files.is_empty(),
-        "expected cache files to be written under {}",
-        path.display()
+    let casm_path = files
+        .iter()
+        .find(|path| path.file_name().is_some_and(|name| name == "casm.json"))
+        .unwrap_or_else(|| panic!("expected cached CASM under {}", cache_dir.display()));
+    let relative_path = casm_path.strip_prefix(cache_dir).unwrap();
+    let components: Vec<_> = relative_path.components().collect();
+
+    assert_eq!(
+        components.len(),
+        5,
+        "unexpected cache path: {relative_path:?}"
     );
+    assert_eq!(components[0].as_os_str(), "casm");
+    assert_eq!(components[1].as_os_str(), sierra_kind);
+    assert_eq!(components[2].as_os_str(), env!("CARGO_PKG_VERSION"));
+    assert_eq!(components[4].as_os_str(), "casm.json");
+
+    let fingerprint_path = casm_path.parent().unwrap().join("fingerprint");
     assert!(
-        files.iter().any(|path| path
-            .file_name()
-            .is_some_and(|file_name| file_name == "casm.json")),
-        "expected cached CASM to be written under {}",
-        path.display()
-    );
-    assert!(
-        files.iter().any(|path| path
-            .file_name()
-            .is_some_and(|file_name| file_name == "fingerprint")),
-        "expected fingerprint to be written under {}",
-        path.display()
+        files.contains(&fingerprint_path),
+        "expected fingerprint next to {}",
+        casm_path.display()
     );
 }
 

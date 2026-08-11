@@ -1,6 +1,5 @@
 use crate::e2e::{
-    assert_cache_files_written, cached_casm_file, copy_sierra_fixture, runner,
-    temp_dir_with_sierra_file,
+    assert_cache_layout, cached_casm_file, copy_sierra_fixture, runner, temp_dir_with_sierra_file,
 };
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use indoc::indoc;
@@ -69,7 +68,7 @@ fn write_to_cache_dir() {
 
     snapbox.assert().success();
     verify_output_file(temp_dir.path().join(casm_file_name));
-    assert_cache_files_written(&temp_dir.path().join(cache_dir_name));
+    assert_cache_layout(&temp_dir.path().join(cache_dir_name), "contract");
 }
 
 #[test]

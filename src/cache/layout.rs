@@ -88,7 +88,7 @@ impl CasmCompilationFingerprint {
     }
 }
 
-/// Hashes bytes into a short, filesystem-safe hex string.
+/// Hashes bytes into a short, filesystem-safe string.
 fn short_hash(bytes: &[u8]) -> String {
     let mut hasher = StableHasher::new();
     hasher.write(bytes);
@@ -98,7 +98,7 @@ fn short_hash(bytes: &[u8]) -> String {
 /// Full path to a slot's `casm.json`, under `<cache_dir>/casm/<kind>/<usc-version>/<slot-id>/`.
 pub(super) fn cache_entry_path(cache_dir: &Path, slot: &CasmCacheSlot) -> PathBuf {
     // Every segment here is filesystem-safe by construction: the version/kind are trusted
-    // constants, and `slot.slot_id` comes from `finish_as_short_hash`, so it is a hex string.
+    // constants, and `slot.slot_id` comes from `finish_as_short_hash`.
     cache_dir
         .join(CASM_CACHE_DIR)
         .join(slot.sierra_kind.as_str())
