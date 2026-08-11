@@ -29,9 +29,6 @@ pub(super) fn read_cache_entry(
         return None;
     }
 
-    // Opening the file here is also the existence check: if the fingerprint is present but
-    // `casm.json` is missing (e.g. an interrupted write), we treat it as a miss. We pass the open
-    // handle on so the file is read only once and never reopened.
     match fs::File::open(path) {
         Ok(file) => Some(CasmCompilationOutput::CachedFile(file)),
         Err(error) if error.kind() == io::ErrorKind::NotFound => None,

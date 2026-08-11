@@ -49,8 +49,7 @@ pub fn compile_with_cache(
     }
 
     let output = compile()?;
-    // We already have the compiled value in memory, so we return it either way and only try to save
-    // it to the cache on the side. A failed write is just logged - it must not break compilation.
+
     if let Err(error) = write_cache_entry(&cache_entry_path, fingerprint, &output) {
         tracing::debug!(
             path = %cache_entry_path.display(),
