@@ -100,6 +100,8 @@ impl CasmCacheEntry {
 
     /// Stores the CASM first and its fingerprint second, so the fingerprint marks a complete entry.
     pub(super) fn store(&self, output: &Value) -> io::Result<()> {
+        // Ensure an interrupted replacement leaves a cache miss, not a stale valid fingerprint.
+        remove_file_if_exists(&self.fingerprint_path())?;
         write_json_file_atomically(&self.casm_path, output)?;
         write_text_file_atomically(&self.fingerprint_path(), &self.expected_fingerprint)
     }
@@ -119,6 +121,14 @@ impl CasmCacheEntry {
         }
 
         true
+    }
+}
+
+fn remove_file_if_exists(path: &Path) -> io::Result<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
     }
 }
 
