@@ -29,11 +29,7 @@ impl SierraKind {
     }
 }
 
-/// Identifies which cache file a given Sierra artifact path maps to.
-///
-/// The slot is keyed on the artifact's canonical path and kind, so a given path has at most one
-/// entry per kind - recompiling the same artifact overwrites its slot rather than piling up
-/// historical entries.
+/// Directory which identifies a cache entry, under `<cache_dir>/casm/<kind>/<usc-version>/<slot-id>/`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct CasmCacheSlot {
     sierra_kind: SierraKind,
@@ -41,8 +37,6 @@ pub(super) struct CasmCacheSlot {
 }
 
 impl CasmCacheSlot {
-    /// Builds the slot for `sierra_path`, canonicalizing it first so that different spellings of
-    /// the same file resolve to one slot.
     pub(super) fn new(sierra_kind: SierraKind, sierra_path: &Path) -> Result<Self> {
         let sierra_path = fs::canonicalize(sierra_path).with_context(|| {
             format!(
@@ -50,8 +44,6 @@ impl CasmCacheSlot {
                 sierra_path.display()
             )
         })?;
-        // The slot id only turns the (arbitrary) artifact path into a stable, filesystem-safe
-        // directory name; the kind and versions are separate path segments in `cache_entry_path`.
         Ok(Self {
             sierra_kind,
             slot_id: short_hash(sierra_path.to_string_lossy().as_bytes()),
@@ -59,8 +51,7 @@ impl CasmCacheSlot {
     }
 }
 
-/// Captures everything about the input that must match for a cache entry to be reusable.
-/// A cached entry is served only when its stored fingerprint equals the current one.
+/// Hash of the Sierra input file, used to determine whether a cache entry is valid.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CasmCompilationFingerprint {
     digest: String,
@@ -81,8 +72,6 @@ impl CasmCompilationFingerprint {
         Ok(Self { digest })
     }
 
-    /// The digest compared against a stored entry to decide a hit or miss. It is the hash of the
-    /// Sierra input alone; the USC version and kind live in the entry's path.
     pub(super) fn digest(&self) -> &str {
         &self.digest
     }
@@ -107,7 +96,6 @@ pub(super) fn cache_entry_path(cache_dir: &Path, slot: &CasmCacheSlot) -> PathBu
         .join("casm.json")
 }
 
-/// Streams a file through the hasher in fixed-size chunks, so hashing does not depend on file size.
 fn hash_file_content(path: &Path) -> io::Result<String> {
     let mut file = fs::File::open(path)?;
     let mut hasher = StableHasher::new();
