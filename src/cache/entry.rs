@@ -15,8 +15,6 @@ use tempfile::Builder;
 const CASM_CACHE_DIR: &str = "casm";
 const CASM_FILE_NAME: &str = "casm.json";
 const FINGERPRINT_FILE_NAME: &str = "fingerprint";
-// Entries are namespaced by `USC_VERSION`, so releases invalidate old ones automatically. If you
-// change the hardcoded codegen config without bumping the version, clear the cache manually.
 const USC_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// A CASM cache entry for the current contents of a Sierra file.
@@ -102,6 +100,7 @@ impl CasmCacheEntry {
     pub(super) fn store(&self, output: &Value) -> io::Result<()> {
         // Ensure an interrupted replacement leaves a cache miss, not a stale valid fingerprint.
         remove_file_if_exists(&self.fingerprint_path())?;
+
         write_json_file_atomically(&self.casm_path, output)?;
         write_text_file_atomically(&self.fingerprint_path(), &self.expected_fingerprint)
     }
