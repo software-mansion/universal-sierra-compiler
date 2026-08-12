@@ -40,7 +40,7 @@ pub fn compile_with_cache(
     let output = compile()?;
 
     if let Err(error) = write_cache_entry(&cache_entry_path, &fingerprint, &output) {
-        tracing::debug!(
+        tracing::warn!(
             path = %cache_entry_path.display(),
             %error,
             "failed to write CASM cache entry"
