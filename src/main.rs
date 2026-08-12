@@ -46,7 +46,6 @@ fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -
     serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
 }
 
-/// Writes the CASM to `output_file_path`, or to stdout when it is `None`.
 #[tracing::instrument(skip_all, level = "info")]
 fn output_casm(output: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
     if let Some(output_path) = output_file_path {
