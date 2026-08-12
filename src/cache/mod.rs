@@ -9,9 +9,7 @@ mod entry;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum SierraKind {
-    /// A `compile-raw` target (a plain Sierra `Program`).
     Raw,
-    /// A `compile-contract` target (a Starknet `ContractClass`).
     Contract,
 }
 
