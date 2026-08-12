@@ -60,7 +60,8 @@ fn assert_cache_layout(cache_dir: &Path, sierra_kind: &str) {
     assert_eq!(
         components.len(),
         5,
-        "unexpected cache path: {relative_path:?}"
+        "unexpected cache path: {}",
+        relative_path.display()
     );
     assert_eq!(components[0].as_os_str(), "casm");
     assert_eq!(components[1].as_os_str(), sierra_kind);
