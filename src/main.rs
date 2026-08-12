@@ -71,13 +71,13 @@ fn main_execution() -> Result<bool> {
         Commands::CompileContract(compile_contract) => {
             let sierra_path = compile_contract.sierra_path;
             let casm_json = cache::compile_with_cache(
-                compile_contract.cache_dir.as_deref(),
                 &sierra_path,
                 SierraKind::Contract,
                 || {
                     let sierra_json = read_json(sierra_path.clone())?;
                     commands::compile_contract::compile(sierra_json)
                 },
+                compile_contract.cache_dir.as_deref(),
             )?;
 
             output_casm(&casm_json, compile_contract.output_path)?;
@@ -85,7 +85,6 @@ fn main_execution() -> Result<bool> {
         Commands::CompileRaw(compile_raw) => {
             let sierra_path = compile_raw.sierra_path;
             let cairo_program_json = cache::compile_with_cache(
-                compile_raw.cache_dir.as_deref(),
                 &sierra_path,
                 SierraKind::Raw,
                 || {
@@ -94,6 +93,7 @@ fn main_execution() -> Result<bool> {
                     )?;
                     commands::compile_raw::compile(&sierra_program)
                 },
+                compile_raw.cache_dir.as_deref(),
             )?;
 
             output_casm(&cairo_program_json, compile_raw.output_path)?;

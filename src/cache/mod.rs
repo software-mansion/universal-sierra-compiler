@@ -1,47 +1,51 @@
 //! Optional persistent cache for CASM compiled from Sierra.
-//!
-//! A slot picks the cache file for a Sierra artifact path. A fingerprint tells whether that file
-//! still matches the current input.
 
 use anyhow::Result;
+use entry::CasmCacheEntry;
 use serde_json::Value;
 use std::path::Path;
 
-mod layout;
-mod store;
+mod entry;
 
-pub use layout::SierraKind;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum SierraKind {
+    /// A `compile-raw` target (a plain Sierra `Program`).
+    Raw,
+    /// A `compile-contract` target (a Starknet `ContractClass`).
+    Contract,
+}
 
-use layout::{cache_entry_path, CasmCacheSlot, CasmCompilationFingerprint};
-use store::{read_cache_entry, write_cache_entry};
+impl SierraKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Raw => "raw",
+            Self::Contract => "contract",
+        }
+    }
+}
 
 /// Returns the CASM for `sierra_path`, serving it from `cache_dir` when a valid entry exists.
-///
-/// With no `cache_dir` the cache is skipped and `compile` always runs. Otherwise a hit (matching
-/// `fingerprint`) is returned without compiling; on a miss `compile` runs and its output is saved.
-/// Saving is best-effort - a failed write is only logged, not returned as an error.
-pub fn compile_with_cache(
-    cache_dir: Option<&Path>,
+/// With no `cache_dir` provided or a cache miss, the `compile` closure is called.
+pub(super) fn compile_with_cache(
     sierra_path: &Path,
     sierra_kind: SierraKind,
     compile: impl FnOnce() -> Result<Value>,
+    cache_dir: Option<&Path>,
 ) -> Result<Value> {
     let Some(cache_dir) = cache_dir else {
         return compile();
     };
 
-    let fingerprint = CasmCompilationFingerprint::from_file(sierra_path)?;
-    let slot = CasmCacheSlot::new(sierra_kind, sierra_path)?;
-    let cache_entry_path = cache_entry_path(cache_dir, &slot);
-    if let Some(output) = read_cache_entry(&cache_entry_path, &fingerprint) {
+    let entry = CasmCacheEntry::new(cache_dir, sierra_path, sierra_kind)?;
+    if let Some(output) = entry.load() {
         return Ok(output);
     }
 
     let output = compile()?;
 
-    if let Err(error) = write_cache_entry(&cache_entry_path, &fingerprint, &output) {
+    if let Err(error) = entry.store(&output) {
         tracing::warn!(
-            path = %cache_entry_path.display(),
+            path = %entry.casm_path().display(),
             %error,
             "failed to write CASM cache entry"
         );
@@ -53,10 +57,6 @@ pub fn compile_with_cache(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache::layout::{cache_entry_path, CasmCacheSlot};
-    use crate::cache::store::{
-        fingerprint_path, read_cache_entry, write_cache_entry, write_text_file_atomically,
-    };
     use serde_json::json;
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -67,8 +67,21 @@ mod tests {
         path
     }
 
-    fn fingerprint_from_file(source_path: &Path) -> CasmCompilationFingerprint {
-        CasmCompilationFingerprint::from_file(source_path).unwrap()
+    fn count_files_named(path: &Path, file_name: &str) -> usize {
+        let Ok(entries) = fs::read_dir(path) else {
+            return 0;
+        };
+
+        entries
+            .map(|entry| entry.unwrap().path())
+            .map(|path| {
+                if path.is_dir() {
+                    count_files_named(&path, file_name)
+                } else {
+                    usize::from(path.file_name().is_some_and(|name| name == file_name))
+                }
+            })
+            .sum()
     }
 
     #[test]
@@ -80,22 +93,28 @@ mod tests {
             &json!({"program": "same"}),
         );
 
-        let first = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": 1}))
-        })
+        let first = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": 1})),
+            Some(temp.path()),
+        )
         .unwrap();
 
-        let second = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-            panic!("matching cache entry should avoid recompilation")
-        })
+        let second = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || panic!("matching cache entry should avoid recompilation"),
+            Some(temp.path()),
+        )
         .unwrap();
 
         assert_eq!(first, json!({"compiled": 1}));
-        assert_eq!(second, json!({"compiled": 1}));
+        assert_eq!(second, first);
     }
 
     #[test]
-    fn separates_cache_entries_by_sierra_kind() {
+    fn separates_entries_by_kind() {
         let temp = tempfile::tempdir().unwrap();
         let source_path = write_source(
             temp.path(),
@@ -103,174 +122,85 @@ mod tests {
             &json!({"program": "same"}),
         );
 
-        let raw_slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let contract_slot = CasmCacheSlot::new(SierraKind::Contract, &source_path).unwrap();
-
-        assert_ne!(
-            cache_entry_path(temp.path(), &raw_slot),
-            cache_entry_path(temp.path(), &contract_slot)
-        );
-    }
-
-    #[test]
-    fn uses_single_cache_entry_for_same_artifact_path() {
-        let temp = tempfile::tempdir().unwrap();
-        let first_input = json!({"program": "first"});
-        let second_input = json!({"program": "second"});
-        let source_path = write_source(temp.path(), "program.sierra.json", &first_input);
-
-        // Two different inputs for the same artifact path produce different fingerprints but share
-        // the same cache slot, so the later compilation overwrites the earlier one.
-        let first = fingerprint_from_file(&source_path);
-        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let path = cache_entry_path(temp.path(), &slot);
-
-        let first_output =
-            compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-                Ok(json!({"compiled": "first"}))
-            })
-            .unwrap();
-        let first_output_json = first_output;
-
-        fs::write(&source_path, serde_json::to_vec(&second_input).unwrap()).unwrap();
-        let second = fingerprint_from_file(&source_path);
-        let second_output =
-            compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-                Ok(json!({"compiled": "second"}))
-            })
-            .unwrap();
-        let second_output_json = second_output;
-
-        assert_eq!(first_output_json, json!({"compiled": "first"}));
-        assert_eq!(second_output_json, json!({"compiled": "second"}));
-        assert_eq!(cache_entry_path(temp.path(), &slot), path);
-        assert!(read_cache_entry(&path, &first).is_none());
-        assert_eq!(
-            read_cache_entry(&path, &second).unwrap(),
-            second_output_json
-        );
-    }
-
-    #[test]
-    fn recompiles_and_replaces_cache_entry_with_missing_casm_file() {
-        let temp = tempfile::tempdir().unwrap();
-        let source_path = write_source(
-            temp.path(),
-            "program.sierra.json",
-            &json!({"program": "same"}),
-        );
-        let fingerprint = fingerprint_from_file(&source_path);
-        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let path = cache_entry_path(temp.path(), &slot);
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        write_text_file_atomically(&fingerprint_path(&path), fingerprint.digest()).unwrap();
-
-        let output = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": 2}))
-        })
+        let raw = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": "raw"})),
+            Some(temp.path()),
+        )
         .unwrap();
-        let cached = read_cache_entry(&path, &fingerprint).unwrap();
-
-        assert_eq!(output, json!({"compiled": 2}));
-        assert_eq!(cached, json!({"compiled": 2}));
-    }
-
-    #[test]
-    fn ignores_cache_entry_with_mismatched_fingerprint_metadata() {
-        let temp = tempfile::tempdir().unwrap();
-        let source_path = write_source(
-            temp.path(),
-            "program.sierra.json",
-            &json!({"program": "same"}),
-        );
-        let stale_source_path = write_source(
-            temp.path(),
-            "stale.sierra.json",
-            &json!({"program": "other"}),
-        );
-        let fingerprint = fingerprint_from_file(&source_path);
-        let stale_fingerprint = fingerprint_from_file(&stale_source_path);
-        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let path = cache_entry_path(temp.path(), &slot);
-
-        write_cache_entry(&path, &stale_fingerprint, &json!({"compiled": "stale"})).unwrap();
-
-        let output = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": "fresh"}))
-        })
+        let contract = compile_with_cache(
+            &source_path,
+            SierraKind::Contract,
+            || Ok(json!({"compiled": "contract"})),
+            Some(temp.path()),
+        )
         .unwrap();
 
-        let compiled_output_json = output;
-
-        assert_eq!(compiled_output_json, json!({"compiled": "fresh"}));
-        assert_eq!(
-            read_cache_entry(&path, &fingerprint).unwrap(),
-            compiled_output_json
-        );
+        assert_ne!(raw, contract);
+        assert_eq!(count_files_named(temp.path(), "casm.json"), 2);
     }
 
     #[test]
-    fn no_cache_dir_compiles_without_writing() {
+    fn changed_input_replaces_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = write_source(
+            temp.path(),
+            "program.sierra.json",
+            &json!({"program": "first"}),
+        );
+
+        let first = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": "first"})),
+            Some(temp.path()),
+        )
+        .unwrap();
+
+        fs::write(
+            &source_path,
+            serde_json::to_vec(&json!({"program": "second"})).unwrap(),
+        )
+        .unwrap();
+        let second = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": "second"})),
+            Some(temp.path()),
+        )
+        .unwrap();
+        let cached = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || panic!("updated cache entry should avoid recompilation"),
+            Some(temp.path()),
+        )
+        .unwrap();
+
+        assert_ne!(first, second);
+        assert_eq!(cached, second);
+        assert_eq!(count_files_named(temp.path(), "casm.json"), 1);
+    }
+
+    #[test]
+    fn without_cache_compiles_directly() {
         let temp = tempfile::tempdir().unwrap();
         let missing_source_path = temp.path().join("missing.sierra.json");
-        let output = compile_with_cache(None, &missing_source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": 3}))
-        })
+
+        let output = compile_with_cache(
+            &missing_source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": 3})),
+            None,
+        )
         .unwrap();
 
         assert_eq!(output, json!({"compiled": 3}));
     }
 
     #[test]
-    fn entry_without_fingerprint_is_a_miss() {
-        let temp = tempfile::tempdir().unwrap();
-        let source_path = write_source(
-            temp.path(),
-            "program.sierra.json",
-            &json!({"program": "same"}),
-        );
-        let fingerprint = fingerprint_from_file(&source_path);
-        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let path = cache_entry_path(temp.path(), &slot);
-
-        // Write casm.json but not the fingerprint file (the commit marker) - the entry is incomplete.
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(&path, json!({"compiled": "orphan"}).to_string()).unwrap();
-
-        assert!(read_cache_entry(&path, &fingerprint).is_none());
-    }
-
-    #[test]
-    fn malformed_cache_entry_is_recompiled_and_replaced() {
-        let temp = tempfile::tempdir().unwrap();
-        let source_path = write_source(
-            temp.path(),
-            "program.sierra.json",
-            &json!({"program": "same"}),
-        );
-        let fingerprint = fingerprint_from_file(&source_path);
-        let slot = CasmCacheSlot::new(SierraKind::Raw, &source_path).unwrap();
-        let path = cache_entry_path(temp.path(), &slot);
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(&path, "{not-json").unwrap();
-        write_text_file_atomically(&fingerprint_path(&path), fingerprint.digest()).unwrap();
-
-        let output = compile_with_cache(Some(temp.path()), &source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": "fresh"}))
-        })
-        .unwrap();
-
-        assert_eq!(output, json!({"compiled": "fresh"}));
-        assert_eq!(
-            read_cache_entry(&path, &fingerprint).unwrap(),
-            json!({"compiled": "fresh"})
-        );
-    }
-
-    #[test]
-    fn compiles_and_returns_output_when_cache_write_fails() {
+    fn cache_write_failure_does_not_fail_compilation() {
         let temp = tempfile::tempdir().unwrap();
         let source_path = write_source(
             temp.path(),
@@ -282,9 +212,12 @@ mod tests {
         let cache_dir = temp.path().join("not-a-dir");
         fs::write(&cache_dir, "x").unwrap();
 
-        let output = compile_with_cache(Some(&cache_dir), &source_path, SierraKind::Raw, || {
-            Ok(json!({"compiled": 4}))
-        })
+        let output = compile_with_cache(
+            &source_path,
+            SierraKind::Raw,
+            || Ok(json!({"compiled": 4})),
+            Some(&cache_dir),
+        )
         .unwrap();
 
         assert_eq!(output, json!({"compiled": 4}));
