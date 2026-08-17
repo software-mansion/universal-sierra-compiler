@@ -162,19 +162,29 @@ fn hash_file_content(path: &Path) -> io::Result<String> {
 }
 
 fn write_json_file_atomically(path: &Path, value: &Value) -> io::Result<()> {
+    write_file_atomically(path, |writer| {
+        serde_json::to_writer(writer, value).map_err(io::Error::other)
+    })
+}
+
+fn write_text_file_atomically(path: &Path, value: &str) -> io::Result<()> {
+    write_file_atomically(path, |writer| writer.write_all(value.as_bytes()))
+}
+
+fn write_file_atomically(
+    path: &Path,
+    write: impl FnOnce(&mut dyn io::Write) -> io::Result<()>,
+) -> io::Result<()> {
     let parent = path
         .parent()
-        .expect("CASM cache entry path should always have a parent");
+        .expect("CASM cache file path should always have a parent");
     fs::create_dir_all(parent)?;
 
-    let mut temp_file = Builder::new()
-        .prefix(".casm-cache-")
-        .suffix(".json")
-        .tempfile_in(parent)?;
+    let mut temp_file = Builder::new().prefix(".casm-cache-").tempfile_in(parent)?;
 
     {
         let mut writer = BufWriter::new(&mut temp_file);
-        serde_json::to_writer(&mut writer, value).map_err(io::Error::other)?;
+        write(&mut writer)?;
         writer.flush()?;
     }
 
@@ -183,22 +193,6 @@ fn write_json_file_atomically(path: &Path, value: &Value) -> io::Result<()> {
 
     Ok(())
 }
-
-fn write_text_file_atomically(path: &Path, value: &str) -> io::Result<()> {
-    let parent = path
-        .parent()
-        .expect("CASM cache fingerprint path should always have a parent");
-    fs::create_dir_all(parent)?;
-
-    let mut temp_file = Builder::new().prefix(".casm-cache-").tempfile_in(parent)?;
-
-    temp_file.write_all(value.as_bytes())?;
-    temp_file.flush()?;
-    temp_file.persist(path).map_err(|error| error.error)?;
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
