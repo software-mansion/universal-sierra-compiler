@@ -1,6 +1,6 @@
 //! Optional persistent cache for CASM compiled from Sierra.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use entry::CasmCacheEntry;
 use serde_json::Value;
 use std::path::Path;
@@ -28,18 +28,25 @@ pub fn compile_with_cache(
     sierra_path: &Path,
     sierra_kind: SierraKind,
     cache_dir: Option<&Path>,
-    compile: impl FnOnce() -> Result<Value>,
+    compile: impl FnOnce(&[u8]) -> Result<Value>,
 ) -> Result<Value> {
+    let sierra_content = std::fs::read(sierra_path).with_context(|| {
+        format!(
+            "Unable to read Sierra input file: {}",
+            sierra_path.display()
+        )
+    })?;
+
     let Some(cache_dir) = cache_dir else {
-        return compile();
+        return compile(&sierra_content);
     };
 
-    let entry = CasmCacheEntry::new(cache_dir, sierra_path, sierra_kind)?;
+    let entry = CasmCacheEntry::new(cache_dir, sierra_path, &sierra_content, sierra_kind)?;
     if let Some(output) = entry.load() {
         return Ok(output);
     }
 
-    let output = compile()?;
+    let output = compile(&sierra_content)?;
 
     if let Err(error) = entry.store(&output) {
         tracing::debug!(
@@ -90,13 +97,12 @@ mod tests {
             "program.sierra.json",
             &json!({"program": "same"}),
         );
-
-        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             Ok(json!({"compiled": 1}))
         })
         .unwrap();
 
-        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             panic!("matching cache entry should avoid recompilation")
         })
         .unwrap();
@@ -113,8 +119,7 @@ mod tests {
             "program.sierra.json",
             &json!({"program": "same"}),
         );
-
-        let raw = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let raw = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             Ok(json!({"compiled": "raw"}))
         })
         .unwrap();
@@ -122,7 +127,7 @@ mod tests {
             &source_path,
             SierraKind::Contract,
             Some(temp.path()),
-            || Ok(json!({"compiled": "contract"})),
+            |_| Ok(json!({"compiled": "contract"})),
         )
         .unwrap();
 
@@ -138,8 +143,7 @@ mod tests {
             "program.sierra.json",
             &json!({"program": "first"}),
         );
-
-        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             Ok(json!({"compiled": "first"}))
         })
         .unwrap();
@@ -149,11 +153,11 @@ mod tests {
             serde_json::to_vec(&json!({"program": "second"})).unwrap(),
         )
         .unwrap();
-        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             Ok(json!({"compiled": "second"}))
         })
         .unwrap();
-        let cached = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+        let cached = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), |_| {
             panic!("updated cache entry should avoid recompilation")
         })
         .unwrap();
@@ -166,9 +170,13 @@ mod tests {
     #[test]
     fn without_cache_compiles_directly() {
         let temp = tempfile::tempdir().unwrap();
-        let missing_source_path = temp.path().join("missing.sierra.json");
+        let source_path = write_source(
+            temp.path(),
+            "program.sierra.json",
+            &json!({"program": "same"}),
+        );
 
-        let output = compile_with_cache(&missing_source_path, SierraKind::Raw, None, || {
+        let output = compile_with_cache(&source_path, SierraKind::Raw, None, |_| {
             Ok(json!({"compiled": 3}))
         })
         .unwrap();
@@ -184,12 +192,11 @@ mod tests {
             "program.sierra.json",
             &json!({"program": "same"}),
         );
-
         // Point the cache at a regular file, so creating any directory beneath it fails.
         let cache_dir = temp.path().join("not-a-dir");
         fs::write(&cache_dir, "x").unwrap();
 
-        let output = compile_with_cache(&source_path, SierraKind::Raw, Some(&cache_dir), || {
+        let output = compile_with_cache(&source_path, SierraKind::Raw, Some(&cache_dir), |_| {
             Ok(json!({"compiled": 4}))
         })
         .unwrap();

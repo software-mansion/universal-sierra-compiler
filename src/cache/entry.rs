@@ -8,7 +8,7 @@ use scarb_stable_hash::StableHasher;
 use serde_json::Value;
 use std::fs;
 use std::hash::Hasher as _;
-use std::io::{self, BufReader, BufWriter, Read as _, Write as _};
+use std::io::{self, BufReader, BufWriter, Write as _};
 use std::path::{Path, PathBuf};
 use tempfile::Builder;
 
@@ -25,13 +25,13 @@ pub struct CasmCacheEntry {
 }
 
 impl CasmCacheEntry {
-    pub fn new(cache_dir: &Path, sierra_path: &Path, sierra_kind: SierraKind) -> Result<Self> {
-        let fingerprint = hash_file_content(sierra_path).with_context(|| {
-            format!(
-                "Unable to fingerprint Sierra input file: {}",
-                sierra_path.display()
-            )
-        })?;
+    pub fn new(
+        cache_dir: &Path,
+        sierra_path: &Path,
+        sierra_content: &[u8],
+        sierra_kind: SierraKind,
+    ) -> Result<Self> {
+        let fingerprint = short_hash(sierra_content);
         let canonical_sierra_path = fs::canonicalize(sierra_path).with_context(|| {
             format!(
                 "Unable to canonicalize Sierra path for CASM cache entry: {}",
@@ -145,22 +145,6 @@ fn short_hash(bytes: &[u8]) -> String {
     hasher.finish_as_short_hash()
 }
 
-fn hash_file_content(path: &Path) -> io::Result<String> {
-    let mut file = fs::File::open(path)?;
-    let mut hasher = StableHasher::new();
-    let mut buffer = vec![0; 64 * 1024].into_boxed_slice();
-
-    loop {
-        let read = file.read(&mut buffer)?;
-        if read == 0 {
-            break;
-        }
-        hasher.write(&buffer[..read]);
-    }
-
-    Ok(hasher.finish_as_short_hash())
-}
-
 fn write_json_file_atomically(path: &Path, value: &Value) -> io::Result<()> {
     write_file_atomically(path, |writer| {
         serde_json::to_writer(writer, value).map_err(io::Error::other)
@@ -205,7 +189,8 @@ mod tests {
     }
 
     fn entry(cache_dir: &Path, source_path: &Path) -> CasmCacheEntry {
-        CasmCacheEntry::new(cache_dir, source_path, SierraKind::Raw).unwrap()
+        let source_content = fs::read(source_path).unwrap();
+        CasmCacheEntry::new(cache_dir, source_path, &source_content, SierraKind::Raw).unwrap()
     }
 
     #[test]
@@ -263,43 +248,26 @@ mod tests {
     }
 
     #[test]
-    fn hashes_file_content() {
-        let temp = tempfile::tempdir().unwrap();
-        let a = write_file(temp.path(), "a.json", b"{\"program\": 1}");
-        let a_copy = write_file(temp.path(), "a_copy.json", b"{\"program\": 1}");
-        let b = write_file(temp.path(), "b.json", b"{\"program\": 2}");
+    fn hashes_content() {
+        let a = b"{\"program\": 1}";
+        let a_copy = b"{\"program\": 1}";
+        let b = b"{\"program\": 2}";
 
-        assert_eq!(
-            hash_file_content(&a).unwrap(),
-            hash_file_content(&a_copy).unwrap()
-        );
-        assert_ne!(
-            hash_file_content(&a).unwrap(),
-            hash_file_content(&b).unwrap()
-        );
+        assert_eq!(short_hash(a), short_hash(a_copy));
+        assert_ne!(short_hash(a), short_hash(b));
     }
 
     #[test]
-    fn hashes_files_larger_than_read_buffer() {
-        let temp = tempfile::tempdir().unwrap();
+    fn hashes_large_content() {
         let big: Vec<u8> = (0..200 * 1024)
             .map(|i| u8::try_from(i % 251).unwrap())
             .collect();
+        let big_copy = big.clone();
         let mut mutated = big.clone();
         *mutated.last_mut().unwrap() ^= 0xff;
 
-        let big_path = write_file(temp.path(), "big.bin", &big);
-        let big_copy_path = write_file(temp.path(), "big_copy.bin", &big);
-        let mutated_path = write_file(temp.path(), "mutated.bin", &mutated);
-
-        assert_eq!(
-            hash_file_content(&big_path).unwrap(),
-            hash_file_content(&big_copy_path).unwrap()
-        );
-        assert_ne!(
-            hash_file_content(&big_path).unwrap(),
-            hash_file_content(&mutated_path).unwrap()
-        );
+        assert_eq!(short_hash(&big), short_hash(&big_copy));
+        assert_ne!(short_hash(&big), short_hash(&mutated));
     }
 
     #[test]
@@ -309,7 +277,9 @@ mod tests {
         let cache_dir = temp.path().join("cache");
 
         for (kind, kind_dir) in [(SierraKind::Raw, "raw"), (SierraKind::Contract, "contract")] {
-            let entry = CasmCacheEntry::new(&cache_dir, &source_path, kind).unwrap();
+            let source_content = fs::read(&source_path).unwrap();
+            let entry =
+                CasmCacheEntry::new(&cache_dir, &source_path, &source_content, kind).unwrap();
             let relative_path = entry.casm_path().strip_prefix(&cache_dir).unwrap();
             let components: Vec<_> = relative_path.components().collect();
 

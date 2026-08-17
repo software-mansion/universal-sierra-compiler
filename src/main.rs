@@ -5,8 +5,8 @@ use console::style;
 use mimalloc::MiMalloc;
 use serde_json::Value;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::io::{self, BufWriter, Write};
+use std::path::PathBuf;
 
 mod cache;
 mod commands;
@@ -40,10 +40,8 @@ fn print_error_message(error: &Error) {
 }
 
 #[tracing::instrument(skip_all, level = "info")]
-fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: &Path) -> Result<T> {
-    let sierra_file = File::open(file_path).context("Unable to open json file")?;
-    let sierra_file_reader = BufReader::new(sierra_file);
-    serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
+fn deserialize_json<T: for<'de> serde_core::de::Deserialize<'de>>(bytes: &[u8]) -> Result<T> {
+    serde_json::from_slice(bytes).context("Unable to deserialize JSON")
 }
 
 #[tracing::instrument(skip_all, level = "info")]
@@ -73,8 +71,8 @@ fn main_execution() -> Result<bool> {
                 &sierra_path,
                 SierraKind::Contract,
                 compile_contract.cache_dir.as_deref(),
-                || {
-                    let sierra_json = read_json(&sierra_path)?;
+                |sierra_content| {
+                    let sierra_json = deserialize_json(sierra_content)?;
                     commands::compile_contract::compile(sierra_json)
                 },
             )?;
@@ -87,8 +85,8 @@ fn main_execution() -> Result<bool> {
                 &sierra_path,
                 SierraKind::Raw,
                 compile_raw.cache_dir.as_deref(),
-                || {
-                    let sierra_program: Program = read_json(&sierra_path).context(
+                |sierra_content| {
+                    let sierra_program: Program = deserialize_json(sierra_content).context(
                         "Unable to deserialize Sierra program. Make sure it is in a correct format",
                     )?;
                     commands::compile_raw::compile(&sierra_program)
