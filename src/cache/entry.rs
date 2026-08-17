@@ -38,7 +38,7 @@ impl CasmCacheEntry {
                 sierra_path.display()
             )
         })?;
-        let slot_id = short_hash(canonical_sierra_path.to_string_lossy().as_bytes());
+        let slot_id = short_hash(canonical_sierra_path.as_os_str().as_encoded_bytes());
         let path = cache_dir
             .join(CASM_CACHE_DIR)
             .join(USC_VERSION)
