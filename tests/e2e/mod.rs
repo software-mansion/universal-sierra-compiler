@@ -64,8 +64,8 @@ fn assert_cache_layout(cache_dir: &Path, sierra_kind: &str) {
         relative_path.display()
     );
     assert_eq!(components[0].as_os_str(), "casm");
-    assert_eq!(components[1].as_os_str(), sierra_kind);
-    assert_eq!(components[2].as_os_str(), env!("CARGO_PKG_VERSION"));
+    assert_eq!(components[1].as_os_str(), env!("CARGO_PKG_VERSION"));
+    assert_eq!(components[2].as_os_str(), sierra_kind);
     assert_eq!(components[4].as_os_str(), "casm.json");
 
     let fingerprint_path = casm_path.parent().unwrap().join("fingerprint");

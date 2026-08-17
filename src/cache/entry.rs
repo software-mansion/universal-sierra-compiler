@@ -20,8 +20,8 @@ const USC_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// A CASM cache entry for the current contents of a Sierra file.
 #[derive(Debug)]
 pub(super) struct CasmCacheEntry {
-    casm_path: PathBuf,
-    expected_fingerprint: String,
+    path: PathBuf,
+    fingerprint: String,
 }
 
 impl CasmCacheEntry {
@@ -30,7 +30,7 @@ impl CasmCacheEntry {
         sierra_path: &Path,
         sierra_kind: SierraKind,
     ) -> Result<Self> {
-        let expected_fingerprint = hash_file_content(sierra_path).with_context(|| {
+        let fingerprint = hash_file_content(sierra_path).with_context(|| {
             format!(
                 "Unable to fingerprint Sierra input file: {}",
                 sierra_path.display()
@@ -43,25 +43,22 @@ impl CasmCacheEntry {
             )
         })?;
         let slot_id = short_hash(canonical_sierra_path.to_string_lossy().as_bytes());
-        let casm_path = cache_dir
+        let path = cache_dir
             .join(CASM_CACHE_DIR)
-            .join(sierra_kind.as_str())
             .join(USC_VERSION)
+            .join(sierra_kind.as_str())
             .join(slot_id)
             .join(CASM_FILE_NAME);
 
-        Ok(Self {
-            casm_path,
-            expected_fingerprint,
-        })
+        Ok(Self { path, fingerprint })
     }
 
     pub(super) fn casm_path(&self) -> &Path {
-        &self.casm_path
+        &self.path
     }
 
     fn fingerprint_path(&self) -> PathBuf {
-        self.casm_path.with_file_name(FINGERPRINT_FILE_NAME)
+        self.path.with_file_name(FINGERPRINT_FILE_NAME)
     }
 
     /// Loads the cached CASM if the entry is valid.
@@ -70,12 +67,12 @@ impl CasmCacheEntry {
             return None;
         }
 
-        let file = match fs::File::open(&self.casm_path) {
+        let file = match fs::File::open(&self.path) {
             Ok(file) => file,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return None,
             Err(error) => {
                 tracing::warn!(
-                    path = %self.casm_path.display(),
+                    path = %self.path.display(),
                     %error,
                     "failed to open CASM cache entry"
                 );
@@ -87,7 +84,7 @@ impl CasmCacheEntry {
             Ok(output) => Some(output),
             Err(error) => {
                 tracing::warn!(
-                    path = %self.casm_path.display(),
+                    path = %self.path.display(),
                     %error,
                     "invalid CASM cache entry"
                 );
@@ -101,8 +98,8 @@ impl CasmCacheEntry {
         // Ensure an interrupted replacement leaves a cache miss, not a stale valid fingerprint.
         remove_file_if_exists(&self.fingerprint_path())?;
 
-        write_json_file_atomically(&self.casm_path, output)?;
-        write_text_file_atomically(&self.fingerprint_path(), &self.expected_fingerprint)
+        write_json_file_atomically(&self.path, output)?;
+        write_text_file_atomically(&self.fingerprint_path(), &self.fingerprint)
     }
 
     fn fingerprint_matches(&self) -> bool {
@@ -111,7 +108,7 @@ impl CasmCacheEntry {
             return false;
         };
 
-        if stored != self.expected_fingerprint {
+        if stored != self.fingerprint {
             tracing::warn!(
                 path = %path.display(),
                 "CASM cache fingerprint mismatch"
@@ -259,7 +256,7 @@ mod tests {
         assert!(entry.load().is_none());
 
         fs::remove_file(entry.casm_path()).unwrap();
-        write_text_file_atomically(&entry.fingerprint_path(), &entry.expected_fingerprint).unwrap();
+        write_text_file_atomically(&entry.fingerprint_path(), &entry.fingerprint).unwrap();
         assert!(entry.load().is_none());
     }
 
@@ -328,8 +325,8 @@ mod tests {
 
             assert_eq!(components.len(), 5);
             assert_eq!(components[0].as_os_str(), CASM_CACHE_DIR);
-            assert_eq!(components[1].as_os_str(), kind_dir);
-            assert_eq!(components[2].as_os_str(), USC_VERSION);
+            assert_eq!(components[1].as_os_str(), USC_VERSION);
+            assert_eq!(components[2].as_os_str(), kind_dir);
             assert_eq!(components[4].as_os_str(), CASM_FILE_NAME);
             assert_eq!(
                 entry.fingerprint_path(),
