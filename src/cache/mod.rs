@@ -57,7 +57,7 @@ mod tests {
     use super::*;
     use serde_json::json;
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     fn write_source(cache_root: &Path, file_name: &str, input: &Value) -> PathBuf {
         let path = cache_root.join(file_name);
