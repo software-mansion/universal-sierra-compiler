@@ -14,6 +14,27 @@ fn verify_output_file(output_path: PathBuf) {
     assert!(serde_json::from_value::<CasmContractClass>(casm_json).is_ok());
 }
 
+fn compile_contract_to_file(
+    temp_dir: &tempfile::TempDir,
+    sierra_file_name: &str,
+    output_file_name: &str,
+    cache_dir_name: Option<&str>,
+) -> Vec<u8> {
+    let mut args = vec![
+        "compile-contract",
+        "--sierra-path",
+        sierra_file_name,
+        "--output-path",
+        output_file_name,
+    ];
+    if let Some(cache_dir_name) = cache_dir_name {
+        args.extend(["--cache-dir", cache_dir_name]);
+    }
+
+    runner(args, temp_dir).assert().success();
+    fs::read(temp_dir.path().join(output_file_name)).unwrap()
+}
+
 #[test]
 fn write_to_existing_file() {
     let sierra_file_name = "sierra_1_4_0.json";
@@ -78,33 +99,25 @@ fn second_run_is_served_from_cache() {
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
     let cache_dir = temp_dir.path().join(cache_dir_name);
 
-    let args = |output: &str| {
-        vec![
-            "compile-contract".to_string(),
-            "--sierra-path".to_string(),
-            sierra_file_name.to_string(),
-            "--output-path".to_string(),
-            output.to_string(),
-            "--cache-dir".to_string(),
-            cache_dir_name.to_string(),
-        ]
-    };
-
     // First run populates the cache.
-    let first_args = args("first.json");
-    runner(first_args.iter().map(String::as_str).collect(), &temp_dir)
-        .assert()
-        .success();
+    compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "first.json",
+        Some(cache_dir_name),
+    );
 
     // Replace the cached payload. A recompile on the second run would overwrite it.
     let cached_payload = r#"{"cached":"served-from-cache"}"#;
     fs::write(cached_casm_file(&cache_dir), cached_payload).unwrap();
 
     // Second run - unchanged Sierra input, so the fingerprint matches and cached payload is returned.
-    let second_args = args("second.json");
-    runner(second_args.iter().map(String::as_str).collect(), &temp_dir)
-        .assert()
-        .success();
+    compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "second.json",
+        Some(cache_dir_name),
+    );
 
     let served = fs::read_to_string(temp_dir.path().join("second.json")).unwrap();
     assert_eq!(served, cached_payload);
@@ -116,30 +129,25 @@ fn malformed_cache_entry_is_recompiled() {
     let cache_dir_name = "cache";
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
 
-    let run = |output: &str, cache: bool| {
-        let mut args = vec![
-            "compile-contract",
-            "--sierra-path",
-            sierra_file_name,
-            "--output-path",
-            output,
-        ];
-        if cache {
-            args.extend(["--cache-dir", cache_dir_name]);
-        }
-        runner(args, &temp_dir).assert().success();
-        fs::read(temp_dir.path().join(output)).unwrap()
-    };
-
-    run("first.json", true);
+    compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "first.json",
+        Some(cache_dir_name),
+    );
     fs::write(
         cached_casm_file(&temp_dir.path().join(cache_dir_name)),
         "{not-json",
     )
     .unwrap();
 
-    let recovered = run("recovered.json", true);
-    let uncached = run("uncached.json", false);
+    let recovered = compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "recovered.json",
+        Some(cache_dir_name),
+    );
+    let uncached = compile_contract_to_file(&temp_dir, sierra_file_name, "uncached.json", None);
 
     assert_eq!(recovered, uncached);
     verify_output_file(temp_dir.path().join("recovered.json"));
@@ -152,24 +160,19 @@ fn cache_output_matches_uncached() {
     let cache_dir_name = "cache";
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
 
-    let run = |output: &str, cache: bool| {
-        let mut args = vec![
-            "compile-contract",
-            "--sierra-path",
-            sierra_file_name,
-            "--output-path",
-            output,
-        ];
-        if cache {
-            args.extend(["--cache-dir", cache_dir_name]);
-        }
-        runner(args, &temp_dir).assert().success();
-        fs::read(temp_dir.path().join(output)).unwrap()
-    };
-
-    let uncached = run("uncached.json", false);
-    let miss = run("miss.json", true); // cold cache: compiles and stores
-    let hit = run("hit.json", true); // warm cache: served from the stored entry
+    let uncached = compile_contract_to_file(&temp_dir, sierra_file_name, "uncached.json", None);
+    let miss = compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "miss.json",
+        Some(cache_dir_name),
+    ); // cold cache: compiles and stores
+    let hit = compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "hit.json",
+        Some(cache_dir_name),
+    ); // warm cache: served from the stored entry
 
     assert_eq!(
         uncached, miss,
@@ -184,22 +187,12 @@ fn changed_sierra_invalidates_cache() {
     let cache_dir_name = "cache";
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
 
-    let run = |output: &str, cache: bool| {
-        let mut args = vec![
-            "compile-contract",
-            "--sierra-path",
-            sierra_file_name,
-            "--output-path",
-            output,
-        ];
-        if cache {
-            args.extend(["--cache-dir", cache_dir_name]);
-        }
-        runner(args, &temp_dir).assert().success();
-        fs::read(temp_dir.path().join(output)).unwrap()
-    };
-
-    let first = run("first.json", true);
+    let first = compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "first.json",
+        Some(cache_dir_name),
+    );
 
     copy_sierra_fixture(
         "sierra_contract",
@@ -207,8 +200,14 @@ fn changed_sierra_invalidates_cache() {
         &temp_dir.path().join(sierra_file_name),
     );
 
-    let cached = run("changed-cached.json", true);
-    let uncached = run("changed-uncached.json", false);
+    let cached = compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        "changed-cached.json",
+        Some(cache_dir_name),
+    );
+    let uncached =
+        compile_contract_to_file(&temp_dir, sierra_file_name, "changed-uncached.json", None);
 
     assert_ne!(first, cached, "changed Sierra should produce new CASM");
     assert_eq!(
