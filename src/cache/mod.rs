@@ -37,16 +37,42 @@ pub fn compile_with_cache(
         )
     })?;
 
+    compile_content_with_cache(
+        sierra_path,
+        &sierra_content,
+        sierra_kind,
+        cache_dir,
+        compile,
+    )
+}
+
+fn compile_content_with_cache(
+    sierra_path: &Path,
+    sierra_content: &[u8],
+    sierra_kind: SierraKind,
+    cache_dir: Option<&Path>,
+    compile: impl FnOnce(&[u8]) -> Result<Value>,
+) -> Result<Value> {
     let Some(cache_dir) = cache_dir else {
-        return compile(&sierra_content);
+        return compile(sierra_content);
     };
 
-    let entry = CasmCacheEntry::new(cache_dir, sierra_path, &sierra_content, sierra_kind)?;
+    let entry = match CasmCacheEntry::new(cache_dir, sierra_path, sierra_content, sierra_kind) {
+        Ok(entry) => entry,
+        Err(error) => {
+            tracing::debug!(
+                path = %sierra_path.display(),
+                %error,
+                "failed to initialize CASM cache entry"
+            );
+            return compile(sierra_content);
+        }
+    };
     if let Some(output) = entry.load() {
         return Ok(output);
     }
 
-    let output = compile(&sierra_content)?;
+    let output = compile(sierra_content)?;
 
     if let Err(error) = entry.store(&output) {
         tracing::debug!(
@@ -202,5 +228,22 @@ mod tests {
         .unwrap();
 
         assert_eq!(output, json!({"compiled": 4}));
+    }
+
+    #[test]
+    fn cache_initialization_failure_does_not_fail_compilation() {
+        let temp = tempfile::tempdir().unwrap();
+        let missing_source_path = temp.path().join("missing.sierra.json");
+
+        let output = compile_content_with_cache(
+            &missing_source_path,
+            b"{}",
+            SierraKind::Raw,
+            Some(temp.path()),
+            |_| Ok(json!({"compiled": 5})),
+        )
+        .unwrap();
+
+        assert_eq!(output, json!({"compiled": 5}));
     }
 }
