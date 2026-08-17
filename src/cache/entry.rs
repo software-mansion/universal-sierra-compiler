@@ -67,7 +67,7 @@ impl CasmCacheEntry {
             Ok(file) => file,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return None,
             Err(error) => {
-                tracing::warn!(
+                tracing::debug!(
                     path = %self.path.display(),
                     %error,
                     "failed to open CASM cache entry"
@@ -79,7 +79,7 @@ impl CasmCacheEntry {
         match serde_json::from_reader(BufReader::new(file)) {
             Ok(output) => Some(output),
             Err(error) => {
-                tracing::warn!(
+                tracing::debug!(
                     path = %self.path.display(),
                     %error,
                     "invalid CASM cache entry"
@@ -105,7 +105,7 @@ impl CasmCacheEntry {
         };
 
         if stored != self.fingerprint {
-            tracing::warn!(
+            tracing::debug!(
                 path = %path.display(),
                 "CASM cache fingerprint mismatch"
             );
@@ -129,7 +129,7 @@ fn read_fingerprint(path: &Path) -> Option<String> {
         Ok(value) => Some(value.trim().to_string()),
         Err(error) if error.kind() == io::ErrorKind::NotFound => None,
         Err(error) => {
-            tracing::warn!(
+            tracing::debug!(
                 path = %path.display(),
                 %error,
                 "failed to read CASM cache fingerprint"

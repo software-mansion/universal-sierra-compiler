@@ -42,7 +42,7 @@ pub fn compile_with_cache(
     let output = compile()?;
 
     if let Err(error) = entry.store(&output) {
-        tracing::warn!(
+        tracing::debug!(
             path = %entry.casm_path().display(),
             %error,
             "failed to write CASM cache entry"
