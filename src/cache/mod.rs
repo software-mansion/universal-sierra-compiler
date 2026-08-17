@@ -27,8 +27,8 @@ impl SierraKind {
 pub fn compile_with_cache(
     sierra_path: &Path,
     sierra_kind: SierraKind,
-    compile: impl FnOnce() -> Result<Value>,
     cache_dir: Option<&Path>,
+    compile: impl FnOnce() -> Result<Value>,
 ) -> Result<Value> {
     let Some(cache_dir) = cache_dir else {
         return compile();
@@ -91,20 +91,14 @@ mod tests {
             &json!({"program": "same"}),
         );
 
-        let first = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": 1})),
-            Some(temp.path()),
-        )
+        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            Ok(json!({"compiled": 1}))
+        })
         .unwrap();
 
-        let second = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || panic!("matching cache entry should avoid recompilation"),
-            Some(temp.path()),
-        )
+        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            panic!("matching cache entry should avoid recompilation")
+        })
         .unwrap();
 
         assert_eq!(first, json!({"compiled": 1}));
@@ -120,18 +114,15 @@ mod tests {
             &json!({"program": "same"}),
         );
 
-        let raw = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": "raw"})),
-            Some(temp.path()),
-        )
+        let raw = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            Ok(json!({"compiled": "raw"}))
+        })
         .unwrap();
         let contract = compile_with_cache(
             &source_path,
             SierraKind::Contract,
-            || Ok(json!({"compiled": "contract"})),
             Some(temp.path()),
+            || Ok(json!({"compiled": "contract"})),
         )
         .unwrap();
 
@@ -148,12 +139,9 @@ mod tests {
             &json!({"program": "first"}),
         );
 
-        let first = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": "first"})),
-            Some(temp.path()),
-        )
+        let first = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            Ok(json!({"compiled": "first"}))
+        })
         .unwrap();
 
         fs::write(
@@ -161,19 +149,13 @@ mod tests {
             serde_json::to_vec(&json!({"program": "second"})).unwrap(),
         )
         .unwrap();
-        let second = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": "second"})),
-            Some(temp.path()),
-        )
+        let second = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            Ok(json!({"compiled": "second"}))
+        })
         .unwrap();
-        let cached = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || panic!("updated cache entry should avoid recompilation"),
-            Some(temp.path()),
-        )
+        let cached = compile_with_cache(&source_path, SierraKind::Raw, Some(temp.path()), || {
+            panic!("updated cache entry should avoid recompilation")
+        })
         .unwrap();
 
         assert_ne!(first, second);
@@ -186,12 +168,9 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let missing_source_path = temp.path().join("missing.sierra.json");
 
-        let output = compile_with_cache(
-            &missing_source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": 3})),
-            None,
-        )
+        let output = compile_with_cache(&missing_source_path, SierraKind::Raw, None, || {
+            Ok(json!({"compiled": 3}))
+        })
         .unwrap();
 
         assert_eq!(output, json!({"compiled": 3}));
@@ -210,12 +189,9 @@ mod tests {
         let cache_dir = temp.path().join("not-a-dir");
         fs::write(&cache_dir, "x").unwrap();
 
-        let output = compile_with_cache(
-            &source_path,
-            SierraKind::Raw,
-            || Ok(json!({"compiled": 4})),
-            Some(&cache_dir),
-        )
+        let output = compile_with_cache(&source_path, SierraKind::Raw, Some(&cache_dir), || {
+            Ok(json!({"compiled": 4}))
+        })
         .unwrap();
 
         assert_eq!(output, json!({"compiled": 4}));

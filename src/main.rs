@@ -72,11 +72,11 @@ fn main_execution() -> Result<bool> {
             let casm_json = cache::compile_with_cache(
                 &sierra_path,
                 SierraKind::Contract,
+                compile_contract.cache_dir.as_deref(),
                 || {
                     let sierra_json = read_json(sierra_path.clone())?;
                     commands::compile_contract::compile(sierra_json)
                 },
-                compile_contract.cache_dir.as_deref(),
             )?;
 
             output_casm(&casm_json, compile_contract.output_path)?;
@@ -86,13 +86,13 @@ fn main_execution() -> Result<bool> {
             let cairo_program_json = cache::compile_with_cache(
                 &sierra_path,
                 SierraKind::Raw,
+                compile_raw.cache_dir.as_deref(),
                 || {
                     let sierra_program: Program = read_json(sierra_path.clone()).context(
                         "Unable to deserialize Sierra program. Make sure it is in a correct format",
                     )?;
                     commands::compile_raw::compile(&sierra_program)
                 },
-                compile_raw.cache_dir.as_deref(),
             )?;
 
             output_casm(&cairo_program_json, compile_raw.output_path)?;
