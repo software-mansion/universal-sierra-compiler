@@ -19,17 +19,13 @@ const USC_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// A CASM cache entry for the current contents of a Sierra file.
 #[derive(Debug)]
-pub(super) struct CasmCacheEntry {
+pub struct CasmCacheEntry {
     path: PathBuf,
     fingerprint: String,
 }
 
 impl CasmCacheEntry {
-    pub(super) fn new(
-        cache_dir: &Path,
-        sierra_path: &Path,
-        sierra_kind: SierraKind,
-    ) -> Result<Self> {
+    pub fn new(cache_dir: &Path, sierra_path: &Path, sierra_kind: SierraKind) -> Result<Self> {
         let fingerprint = hash_file_content(sierra_path).with_context(|| {
             format!(
                 "Unable to fingerprint Sierra input file: {}",
@@ -53,7 +49,7 @@ impl CasmCacheEntry {
         Ok(Self { path, fingerprint })
     }
 
-    pub(super) fn casm_path(&self) -> &Path {
+    pub fn casm_path(&self) -> &Path {
         &self.path
     }
 
@@ -62,7 +58,7 @@ impl CasmCacheEntry {
     }
 
     /// Loads the cached CASM if the entry is valid.
-    pub(super) fn load(&self) -> Option<Value> {
+    pub fn load(&self) -> Option<Value> {
         if !self.fingerprint_matches() {
             return None;
         }
@@ -94,7 +90,7 @@ impl CasmCacheEntry {
     }
 
     /// Stores the CASM first and its fingerprint second, so the fingerprint marks a complete entry.
-    pub(super) fn store(&self, output: &Value) -> io::Result<()> {
+    pub fn store(&self, output: &Value) -> io::Result<()> {
         // Ensure an interrupted replacement leaves a cache miss, not a stale valid fingerprint.
         remove_file_if_exists(&self.fingerprint_path())?;
 

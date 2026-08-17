@@ -8,7 +8,7 @@ use std::path::Path;
 mod entry;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum SierraKind {
+pub enum SierraKind {
     Raw,
     Contract,
 }
@@ -24,7 +24,7 @@ impl SierraKind {
 
 /// Returns the CASM for `sierra_path`, serving it from `cache_dir` when a valid entry exists.
 /// With no `cache_dir` provided or a cache miss, the `compile` closure is called.
-pub(super) fn compile_with_cache(
+pub fn compile_with_cache(
     sierra_path: &Path,
     sierra_kind: SierraKind,
     compile: impl FnOnce() -> Result<Value>,
