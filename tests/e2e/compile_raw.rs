@@ -19,10 +19,15 @@ fn verify_output_file(output_path: PathBuf) {
     );
     let debug_info =
         serde_json::from_value::<Vec<(usize, usize)>>(cairo_program_json["debug_info"].clone());
+    let function_costs = cairo_program_json["function_costs"].as_object().unwrap();
 
     assert!(bytecode.is_ok());
     assert!(hints.is_ok());
     assert!(debug_info.is_ok());
+    assert!(!function_costs.is_empty());
+    assert!(function_costs
+        .iter()
+        .all(|(entry_point, costs)| entry_point.parse::<usize>().is_ok() && costs.is_object()));
 }
 
 #[test]
@@ -59,6 +64,7 @@ fn write_to_stdout() {
     let output = String::from_utf8(snapbox.assert().success().get_output().stdout.clone()).unwrap();
     assert!(output.contains("assembled_cairo_program"));
     assert!(output.contains("debug_info"));
+    assert!(output.contains("function_costs"));
 }
 
 #[test]

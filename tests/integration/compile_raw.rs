@@ -14,7 +14,16 @@ fn compile_raw_sierra(sierra_version: &str) {
     let file =
         File::open("tests/data/sierra_raw/sierra_".to_string() + sierra_version + ".json").unwrap();
     let artifact: Program = serde_json::from_reader(file).unwrap();
-    let compiled = compile_raw(&artifact);
+    let compiled = compile_raw(&artifact).unwrap();
+    let function_costs = compiled["function_costs"].as_object().unwrap();
 
-    assert!(compiled.is_ok());
+    assert_eq!(function_costs.len(), artifact.funcs.len());
+    assert!(function_costs
+        .values()
+        .any(|costs| !costs.as_object().unwrap().is_empty()));
+    assert!(artifact.funcs.iter().all(|function| {
+        function_costs
+            .get(&function.entry_point.0.to_string())
+            .is_some_and(serde_json::Value::is_object)
+    }));
 }

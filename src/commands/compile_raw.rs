@@ -1,10 +1,11 @@
 use anyhow::{Context, Result};
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra_to_casm::compiler::{CairoProgramDebugInfo, SierraToCasmConfig};
-use cairo_lang_sierra_to_casm::metadata::{calc_metadata, MetadataComputationConfig};
+use cairo_lang_sierra_to_casm::metadata::{calc_metadata, Metadata, MetadataComputationConfig};
 use cairo_lang_sierra_type_size::ProgramRegistryInfo;
 use clap::Args;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::trace_span;
 
@@ -16,7 +17,7 @@ pub struct CompileRaw {
     pub sierra_path: PathBuf,
 
     /// Path to where compilation result json file will be saved.
-    /// It will consist of `assembled_cairo_program` and `debug_info` fields
+    /// It will consist of `assembled_cairo_program`, `debug_info` and `function_costs` fields
     #[arg(short, long)]
     pub output_path: Option<PathBuf>,
 }
@@ -60,9 +61,28 @@ pub fn compile(sierra_program: &Program) -> Result<Value> {
                 "bytecode": serde_json::to_value(assembled_cairo_program.bytecode)?,
                 "hints": serde_json::to_value(assembled_cairo_program.hints)?
             },
-            "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?
+            "debug_info": serde_json::to_value(serialize_cairo_program_debug_info(&cairo_program.debug_info))?,
+            "function_costs": serialize_function_costs(sierra_program, &metadata)
         })
     })
+}
+
+fn serialize_function_costs(
+    sierra_program: &Program,
+    metadata: &Metadata,
+) -> HashMap<usize, Map<String, Value>> {
+    sierra_program
+        .funcs
+        .iter()
+        .map(|function| {
+            let costs = metadata.gas_info.function_costs[&function.id]
+                .iter()
+                .map(|(token_type, value)| (token_type.name(), Value::from(*value)))
+                .collect();
+
+            (function.entry_point.0, costs)
+        })
+        .collect()
 }
 
 fn serialize_cairo_program_debug_info(debug_info: &CairoProgramDebugInfo) -> Vec<(usize, usize)> {
