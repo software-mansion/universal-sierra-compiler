@@ -67,6 +67,9 @@ $ universal-sierra-compiler \
 
 The cache is best-effort. If it cannot be read or written, USC falls back to normal compilation.
 
+> [!INFO]
+> Caching is currently supported only by the CLI through the `--cache-dir` argument.
+
 ### `compile-contract` subcommand
 
 The input of this subcommand is a path to a file with Sierra of the contract
