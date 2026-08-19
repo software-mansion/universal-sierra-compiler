@@ -74,20 +74,15 @@ fn write_to_cache_dir() {
     let sierra_file_name = "sierra_1_4_0.json";
     let casm_file_name = "casm.json";
     let cache_dir_name = "cache";
-    let args = vec![
-        "compile-contract",
-        "--sierra-path",
-        &sierra_file_name,
-        "--output-path",
-        casm_file_name,
-        "--cache-dir",
-        cache_dir_name,
-    ];
-
     let temp_dir = temp_dir_with_sierra_file("sierra_contract", sierra_file_name);
-    let snapbox = runner(args, &temp_dir);
 
-    snapbox.assert().success();
+    compile_contract_to_file(
+        &temp_dir,
+        sierra_file_name,
+        casm_file_name,
+        Some(cache_dir_name),
+    );
+
     verify_output_file(temp_dir.path().join(casm_file_name));
     assert_cache_layout(&temp_dir.path().join(cache_dir_name), "contract");
 }
