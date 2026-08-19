@@ -226,12 +226,12 @@ mod tests {
         let entry = entry(temp.path(), &source_path);
         let output = json!({"compiled": true});
 
-        fs::create_dir_all(entry.casm_path().parent().unwrap()).unwrap();
-        fs::write(entry.casm_path(), output.to_string()).unwrap();
+        entry.store(&output).unwrap();
+        fs::remove_file(entry.fingerprint_path()).unwrap();
         assert!(entry.load().is_none());
 
+        entry.store(&output).unwrap();
         fs::remove_file(entry.casm_path()).unwrap();
-        write_text_file_atomically(&entry.fingerprint_path(), &entry.fingerprint).unwrap();
         assert!(entry.load().is_none());
     }
 
