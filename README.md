@@ -105,8 +105,18 @@ $ universal-sierra-compiler \
     compile-raw \
       --sierra-path ./path/to/sierra.json
   
-{"assembled_cairo_program": ...}
+{
+  "assembled_cairo_program": ...,
+  "debug_info": ...,
+  "function_costs": {
+    "0": {"const": 10000, "pedersen": 1}
+  }
+}
 ```
+
+`function_costs` maps each raw Sierra function's entry-point statement index to its
+compiler-inferred cost-token counts. Consumers should price builtin tokens using the same
+builtin-cost table that is supplied to the compiled program at execution time.
 
 > 📝 **Note**
 >
