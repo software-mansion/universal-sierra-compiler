@@ -132,7 +132,7 @@ fn cache_hit_is_served_from_cache() {
 }
 
 #[test]
-fn malformed_cache_entry_is_recompiled() {
+fn malformed_json_cache_entry_is_recompiled() {
     let sierra_file_name = "sierra_1_4_0.json";
     let cache_dir_name = "cache";
     let temp_dir = temp_dir_with_sierra_file("sierra_raw", sierra_file_name);
