@@ -3,13 +3,15 @@ use cairo_lang_sierra::program::Program;
 use clap::{Parser, Subcommand};
 use console::style;
 use mimalloc::MiMalloc;
-use serde_json::{to_writer, Value};
+use serde_json::Value;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 
+mod cache;
 mod commands;
 
+use cache::SierraKind;
 use commands::compile_contract::CompileContract;
 use commands::compile_raw::CompileRaw;
 
@@ -38,25 +40,21 @@ fn print_error_message(error: &Error) {
 }
 
 #[tracing::instrument(skip_all, level = "info")]
-fn read_json<T: for<'de> serde_core::de::Deserialize<'de>>(file_path: PathBuf) -> Result<T> {
-    let sierra_file = File::open(file_path).context("Unable to open json file")?;
-    let sierra_file_reader = BufReader::new(sierra_file);
-    serde_json::from_reader(sierra_file_reader).context("Unable to read json file")
+fn deserialize_json<T: for<'de> serde_core::de::Deserialize<'de>>(bytes: &[u8]) -> Result<T> {
+    serde_json::from_slice(bytes).context("Unable to deserialize JSON")
 }
 
 #[tracing::instrument(skip_all, level = "info")]
-fn output_casm(output_json: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
-    match output_file_path {
-        Some(output_path) => {
-            let casm_file =
-                File::create(output_path).context("Unable to open/create casm json file")?;
-            let casm_file_writer = BufWriter::new(casm_file);
-
-            to_writer(casm_file_writer, &output_json).context("Unable to save casm json file")?;
-        }
-        None => {
-            println!("{}", serde_json::to_string(&output_json)?);
-        }
+fn output_casm(output: &Value, output_file_path: Option<PathBuf>) -> Result<()> {
+    if let Some(output_path) = output_file_path {
+        let file = File::create(output_path).context("Unable to open/create casm json file")?;
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, output).context("Unable to save casm json file")?;
+        writer.flush().context("Unable to save casm json file")?;
+    } else {
+        let mut stdout = io::stdout().lock();
+        serde_json::to_writer(&mut stdout, output).context("Unable to write casm json")?;
+        writeln!(stdout).context("Unable to write casm json")?;
     }
 
     Ok(())
@@ -68,18 +66,32 @@ fn main_execution() -> Result<bool> {
 
     match cli.command {
         Commands::CompileContract(compile_contract) => {
-            let sierra_json = read_json(compile_contract.sierra_path)?;
-
-            let casm_json = commands::compile_contract::compile(sierra_json)?;
+            let sierra_path = compile_contract.sierra_path;
+            let casm_json = cache::compile_with_cache(
+                &sierra_path,
+                SierraKind::Contract,
+                compile_contract.cache_dir.as_deref(),
+                |sierra_content| {
+                    let sierra_json = deserialize_json(sierra_content)?;
+                    commands::compile_contract::compile(sierra_json)
+                },
+            )?;
 
             output_casm(&casm_json, compile_contract.output_path)?;
         }
         Commands::CompileRaw(compile_raw) => {
-            let sierra_json: Program = read_json(compile_raw.sierra_path).context(
-                "Unable to deserialize Sierra program. Make sure it is in a correct format",
+            let sierra_path = compile_raw.sierra_path;
+            let cairo_program_json = cache::compile_with_cache(
+                &sierra_path,
+                SierraKind::Raw,
+                compile_raw.cache_dir.as_deref(),
+                |sierra_content| {
+                    let sierra_program: Program = deserialize_json(sierra_content).context(
+                        "Unable to deserialize Sierra program. Make sure it is in a correct format",
+                    )?;
+                    commands::compile_raw::compile(&sierra_program)
+                },
             )?;
-
-            let cairo_program_json = commands::compile_raw::compile(&sierra_json)?;
 
             output_casm(&cairo_program_json, compile_raw.output_path)?;
         }
