@@ -17,7 +17,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - run: cargo test --release
 
   rustfmt:
@@ -29,7 +29,7 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - run: cargo fmt --check
 
   clippy:
@@ -44,7 +44,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - run: cargo lint
 
   typos:
@@ -53,4 +53,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - name: typos-action
-        uses: crate-ci/typos@v1.50.0
+        uses: crate-ci/typos@v1.52.2
