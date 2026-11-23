@@ -43,7 +43,7 @@ pub fn compile(mut sierra_json: Value) -> Result<Value> {
 
     let sierra_version = parse_sierra_version(&sierra_json)?;
     match sierra_version.as_slice() {
-        [1, 2..=9, ..] => {
+        [1, 2..=10, ..] => {
             let sierra_class: ContractClass = serde_json::from_value(sierra_json.clone()).unwrap();
             let populate_debug_info = true;
             let program = sierra_class
